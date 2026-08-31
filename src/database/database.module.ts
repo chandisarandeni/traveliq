@@ -1,8 +1,6 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-
-const databaseLogger = new Logger('Database');
 
 @Module({
   imports: [
@@ -19,10 +17,6 @@ const databaseLogger = new Logger('Database');
 
         return {
           uri: mongoUri,
-          connectionFactory: (connection) => {
-            databaseLogger.log('Successfully connected to the database');
-            return connection;
-          },
         };
       },
     }),

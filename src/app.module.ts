@@ -8,11 +8,13 @@ import { TripFeasibilityModule } from './trip-feasibility/trip-feasibility.modul
 import { TravelPlanRankingModule } from './travel-plan-ranking/travel-plan-ranking.module';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
+import googleDistanceMatrixConfig from './config/google-distance-matrix.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [googleDistanceMatrixConfig],
     }),
     DatabaseModule,
     AttractionSelectionModule,
