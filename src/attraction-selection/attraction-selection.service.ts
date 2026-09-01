@@ -10,7 +10,10 @@ import {
   CandidateAttraction,
   ScoredAttraction,
 } from './interfaces/attraction-selection.interface';
-import { CandidatePlansResult } from './interfaces/candidate-plans.interface';
+import {
+  CandidatePlansResult,
+  TripLocation,
+} from './interfaces/candidate-plans.interface';
 import { calculateDestinationCount } from './algorithms/destination-count.algorithm';
 import { buildInterestWeightMap } from './algorithms/interest-weighting.algorithm';
 import { calculateInterestScore } from './algorithms/interest-scoring.algorithm';
@@ -152,6 +155,8 @@ export class AttractionSelectionService {
    *      interest weights, filtered attractions, and interest scores.
    *   2. Passing the full scored pool to the greedy plan-generation algorithm.
    *   3. Ranking the generated plans by composite score.
+   *   4. Echoing preferredTransportation, startingLocation, endingLocation
+   *      from the request into the response for use by the route-optimisation module.
    *
    * Greedy algorithm complexity: O(P × D × N × K)
    *   P = MAX_CANDIDATE_PLANS (5)
@@ -159,11 +164,15 @@ export class AttractionSelectionService {
    *   N = number of scored candidate attractions
    *   K = average number of interest categories per attraction
    *
-   * @param request Same input shape as selectAttractions()
-   * @returns CandidatePlansResult with up to 5 ranked trip plans
+   * @param request Same input shape as selectAttractions() plus optional trip-context fields
+   * @returns CandidatePlansResult with up to 5 ranked trip plans and echoed trip context
    */
   generateCandidatePlans(
-    request: AttractionSelectionRequest,
+    request: AttractionSelectionRequest & {
+      preferredTransportation?: string;
+      startingLocation?: TripLocation;
+      endingLocation?: TripLocation;
+    },
   ): CandidatePlansResult {
     const {
       tripDuration,
@@ -171,6 +180,9 @@ export class AttractionSelectionService {
       userInterests,
       availableAttractions,
       filterCriteria,
+      preferredTransportation,
+      startingLocation,
+      endingLocation,
     } = request;
 
     // Step 1: Destination count (other developer's algorithm)
@@ -203,10 +215,23 @@ export class AttractionSelectionService {
     // Step 6: Rank plans by composite score (my responsibility)
     const candidatePlans = rankPlans(unrankedPlans);
 
-    return {
+    // Step 7: Build response — echo trip-context fields for route-optimisation module
+    const result: CandidatePlansResult = {
       destinationCount,
       candidatePlans,
     };
+
+    if (preferredTransportation !== undefined) {
+      result.preferredTransportation = preferredTransportation;
+    }
+    if (startingLocation !== undefined) {
+      result.startingLocation = startingLocation;
+    }
+    if (endingLocation !== undefined) {
+      result.endingLocation = endingLocation;
+    }
+
+    return result;
   }
 
   // Preserve boilerplate endpoints for controller compatibility if needed

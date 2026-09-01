@@ -33,15 +33,33 @@ export interface TripPlan {
 }
 
 /**
+ * A geographic coordinate point with a human-readable name.
+ * Used for the trip's starting and ending locations.
+ * These values are passed through from the request and forwarded
+ * to the route optimisation module — no calculation is done here.
+ */
+export interface TripLocation {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+/**
  * Final API response for the candidate plan generation endpoint.
  *
- * destinationCount  — how many attractions each plan must contain
- *                     (calculated by the other developer's destination-count algorithm)
- * candidatePlans    — up to 5 ranked trip plans (best first)
+ * destinationCount        — how many attractions each plan must contain
+ *                           (calculated by the other developer's destination-count algorithm)
+ * candidatePlans          — up to 5 ranked trip plans (best first)
+ * preferredTransportation — echoed from the request (e.g. "private", "public")
+ * startingLocation        — echoed from the request; passed on to route optimisation
+ * endingLocation          — echoed from the request; passed on to route optimisation
  */
 export interface CandidatePlansResult {
   destinationCount: number;
   candidatePlans: TripPlan[];
+  preferredTransportation?: string;
+  startingLocation?: TripLocation;
+  endingLocation?: TripLocation;
 }
 
 /**
