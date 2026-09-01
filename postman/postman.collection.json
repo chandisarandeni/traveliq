@@ -1,0 +1,242 @@
+{
+  "info": {
+    "_postman_id": "8c3df1b2-3a56-4c9b-98b7-6582a839f992",
+    "name": "TravelIQ - Attraction Selection & Trip Planning API",
+    "description": "Postman collection for TravelIQ backend API, specifically the Intelligent Decision / Attraction Selection and Candidate Plan Generation modules.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3006",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Attraction Selection",
+      "item": [
+        {
+          "name": "Generate 5 Candidate Plans (with Coordinates & Trip Context)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has valid destinationCount and candidatePlans array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"destinationCount\");",
+                  "    pm.expect(jsonData.destinationCount).to.be.a(\"number\");",
+                  "    pm.expect(jsonData).to.have.property(\"candidatePlans\");",
+                  "    pm.expect(jsonData.candidatePlans).to.be.an(\"array\");",
+                  "    pm.expect(jsonData.candidatePlans.length).to.be.at.least(1);",
+                  "    pm.expect(jsonData.candidatePlans.length).to.be.at.most(5);",
+                  "});",
+                  "",
+                  "pm.test(\"Each attraction contains latitude and longitude coordinates\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.candidatePlans.forEach((plan) => {",
+                  "        plan.selectedAttractions.forEach((item) => {",
+                  "            pm.expect(item.attraction).to.have.property(\"latitude\");",
+                  "            pm.expect(item.attraction).to.have.property(\"longitude\");",
+                  "            pm.expect(item.attraction.latitude).to.be.a(\"number\");",
+                  "            pm.expect(item.attraction.longitude).to.be.a(\"number\");",
+                  "        });",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Candidate plans have proper structure and ranking\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.candidatePlans.forEach((plan, index) => {",
+                  "        pm.expect(plan).to.have.property(\"planId\");",
+                  "        pm.expect(plan).to.have.property(\"rank\", index + 1);",
+                  "        pm.expect(plan).to.have.property(\"planInterestScore\");",
+                  "        pm.expect(plan).to.have.property(\"diversityScore\");",
+                  "        pm.expect(plan).to.have.property(\"planScore\");",
+                  "        pm.expect(plan).to.have.property(\"selectedAttractions\");",
+                  "        pm.expect(plan.selectedAttractions.length).to.eql(jsonData.destinationCount);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Plans are sorted descending by planScore\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    for (let i = 0; i < jsonData.candidatePlans.length - 1; i++) {",
+                  "        pm.expect(jsonData.candidatePlans[i].planScore).to.be.at.least(jsonData.candidatePlans[i + 1].planScore);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Echoed trip context (transportation & coordinates) is present\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.preferredTransportation).to.eql(\"private\");",
+                  "    pm.expect(jsonData.startingLocation).to.be.an(\"object\");",
+                  "    pm.expect(jsonData.startingLocation.name).to.eql(\"Kandy Railway Station\");",
+                  "    pm.expect(jsonData.startingLocation.latitude).to.eql(7.2906);",
+                  "    pm.expect(jsonData.startingLocation.longitude).to.eql(80.6337);",
+                  "    pm.expect(jsonData.endingLocation).to.be.an(\"object\");",
+                  "    pm.expect(jsonData.endingLocation.name).to.eql(\"Kandy City Centre\");",
+                  "    pm.expect(jsonData.endingLocation.latitude).to.eql(7.2921);",
+                  "    pm.expect(jsonData.endingLocation.longitude).to.eql(80.6378);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 },\n    { \"interest\": \"BEACH\", \"weight\": 3 },\n    { \"interest\": \"CULTURE\", \"weight\": 2 },\n    { \"interest\": \"ADVENTURE\", \"weight\": 2 },\n    { \"interest\": \"RELIGIOUS\", \"weight\": 1 },\n    { \"interest\": \"SCENIC\", \"weight\": 1 },\n    { \"interest\": \"SHOPPING\", \"weight\": 1 },\n    { \"interest\": \"FOOD\", \"weight\": 1 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.9570,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A04\",\n      \"name\": \"Ella Rock\",\n      \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n      \"latitude\": 6.8562,\n      \"longitude\": 81.0466,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A05\",\n      \"name\": \"Galle Fort\",\n      \"categories\": [\"HISTORY\", \"CULTURE\"],\n      \"latitude\": 6.0300,\n      \"longitude\": 80.2170,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A06\",\n      \"name\": \"Udawalawe National Park\",\n      \"categories\": [\"WILDLIFE\"],\n      \"latitude\": 6.4745,\n      \"longitude\": 80.8987,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A07\",\n      \"name\": \"Temple of the Tooth\",\n      \"categories\": [\"RELIGIOUS\", \"CULTURE\"],\n      \"latitude\": 7.2936,\n      \"longitude\": 80.6413,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A08\",\n      \"name\": \"Arugam Bay\",\n      \"categories\": [\"BEACH\", \"ADVENTURE\"],\n      \"latitude\": 6.8415,\n      \"longitude\": 81.8344,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A09\",\n      \"name\": \"Pettah Market\",\n      \"categories\": [\"SHOPPING\", \"FOOD\"],\n      \"latitude\": 6.9366,\n      \"longitude\": 79.8532,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A10\",\n      \"name\": \"Nuwara Eliya\",\n      \"categories\": [\"NATURE\", \"SCENIC\"],\n      \"latitude\": 6.9497,\n      \"longitude\": 80.7891,\n      \"isAvailable\": true\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "plans"
+              ]
+            },
+            "description": "Generates 5 diverse, ranked candidate trip plans with diversity scores, interest scores, attraction coordinates (latitude, longitude), and pass-through trip context."
+          },
+          "response": []
+        },
+        {
+          "name": "Select Attractions (Priority Heap Selection)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has recommendedDestinationCount and candidateAttractions\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property(\"recommendedDestinationCount\");",
+                  "    pm.expect(jsonData).to.have.property(\"candidateAttractions\");",
+                  "    pm.expect(jsonData.candidateAttractions).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.9570,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/select",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "select"
+              ]
+            },
+            "description": "Selects top attractions using Max-Heap prioritization based on user interest scoring."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Plans - Adventure Travel Style",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Destination count reflects ADVENTURE style formula\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    // 3 days ADVENTURE: (3 + 1) + 1 = 5",
+                  "    pm.expect(jsonData.destinationCount).to.eql(5);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"ADVENTURE\",\n  \"userInterests\": [\n    { \"interest\": \"ADVENTURE\", \"weight\": 5 },\n    { \"interest\": \"NATURE\", \"weight\": 4 }\n  ],\n  \"availableAttractions\": [\n    { \"id\": \"A01\", \"name\": \"Sigiriya\", \"categories\": [\"HISTORY\", \"NATURE\"], \"latitude\": 7.9570, \"longitude\": 80.7603, \"isAvailable\": true },\n    { \"id\": \"A02\", \"name\": \"Yala\", \"categories\": [\"WILDLIFE\", \"NATURE\"], \"latitude\": 6.3725, \"longitude\": 81.5218, \"isAvailable\": true },\n    { \"id\": \"A03\", \"name\": \"Mirissa\", \"categories\": [\"BEACH\"], \"latitude\": 5.9483, \"longitude\": 80.4716, \"isAvailable\": true },\n    { \"id\": \"A04\", \"name\": \"Ella Rock\", \"categories\": [\"NATURE\", \"ADVENTURE\"], \"latitude\": 6.8562, \"longitude\": 81.0466, \"isAvailable\": true },\n    { \"id\": \"A05\", \"name\": \"Kitulgala Rafting\", \"categories\": [\"ADVENTURE\"], \"latitude\": 6.9942, \"longitude\": 80.4124, \"isAvailable\": true },\n    { \"id\": \"A06\", \"name\": \"Adam's Peak\", \"categories\": [\"ADVENTURE\", \"RELIGIOUS\"], \"latitude\": 6.8096, \"longitude\": 80.4994, \"isAvailable\": true }\n  ],\n  \"preferredTransportation\": \"public\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "plans"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "App Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
