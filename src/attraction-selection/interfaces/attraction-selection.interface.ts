@@ -12,6 +12,8 @@ export interface SriLankaAttraction {
   region?: string;
   district?: string;
   rating?: number;
+  latitude?: number;
+  longitude?: number;
   location?: {
     lat: number;
     lng: number;
