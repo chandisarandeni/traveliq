@@ -13,6 +13,7 @@ import { AttractionSelectionService } from './attraction-selection.service';
 import { CreateAttractionSelectionDto } from './dto/create-attraction-selection.dto';
 import { UpdateAttractionSelectionDto } from './dto/update-attraction-selection.dto';
 import { SelectAttractionsDto } from './dto/select-attractions.dto';
+import { GeneratePlansDto } from './dto/generate-plans.dto';
 
 @Controller('attraction-selection')
 export class AttractionSelectionController {
@@ -25,6 +26,21 @@ export class AttractionSelectionController {
   selectAttractions(@Body() selectAttractionsDto: SelectAttractionsDto) {
     return this.attractionSelectionService.selectAttractions(
       selectAttractionsDto,
+    );
+  }
+
+  /**
+   * POST /attraction-selection/plans
+   *
+   * Runs the full greedy plan-generation pipeline and returns up to 5 ranked
+   * candidate trip plans. Integrates directly with the other developer's
+   * interest-scoring and destination-count algorithms.
+   */
+  @Post('plans')
+  @HttpCode(HttpStatus.OK)
+  generateCandidatePlans(@Body() generatePlansDto: GeneratePlansDto) {
+    return this.attractionSelectionService.generateCandidatePlans(
+      generatePlansDto,
     );
   }
 

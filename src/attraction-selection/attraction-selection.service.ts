@@ -10,11 +10,14 @@ import {
   CandidateAttraction,
   ScoredAttraction,
 } from './interfaces/attraction-selection.interface';
+import { CandidatePlansResult } from './interfaces/candidate-plans.interface';
 import { calculateDestinationCount } from './algorithms/destination-count.algorithm';
 import { buildInterestWeightMap } from './algorithms/interest-weighting.algorithm';
 import { calculateInterestScore } from './algorithms/interest-scoring.algorithm';
 import { filterAttractions } from './algorithms/attraction-filter.algorithm';
 import { AttractionMaxHeap } from './data-structures/attraction-max-heap';
+import { generateCandidatePlans as runPlanGeneration } from './algorithms/plan-generator.algorithm';
+import { rankPlans } from './algorithms/plan-ranking.algorithm';
 
 @Injectable()
 export class AttractionSelectionService {
@@ -138,6 +141,71 @@ export class AttractionSelectionService {
       candidateAttractions,
       totalCandidatesEvaluated: availableAttractions.length,
       totalCandidatesFiltered: filteredAttractions.length,
+    };
+  }
+
+  /**
+   * 7. Candidate Plan Generation Pipeline
+   *
+   * Builds up to 5 ranked, diverse trip plans by:
+   *   1. Calling the other developer's algorithms to get destination count,
+   *      interest weights, filtered attractions, and interest scores.
+   *   2. Passing the full scored pool to the greedy plan-generation algorithm.
+   *   3. Ranking the generated plans by composite score.
+   *
+   * Greedy algorithm complexity: O(P × D × N × K)
+   *   P = MAX_CANDIDATE_PLANS (5)
+   *   D = destinationCount
+   *   N = number of scored candidate attractions
+   *   K = average number of interest categories per attraction
+   *
+   * @param request Same input shape as selectAttractions()
+   * @returns CandidatePlansResult with up to 5 ranked trip plans
+   */
+  generateCandidatePlans(
+    request: AttractionSelectionRequest,
+  ): CandidatePlansResult {
+    const {
+      tripDuration,
+      travelStyle,
+      userInterests,
+      availableAttractions,
+      filterCriteria,
+    } = request;
+
+    // Step 1: Destination count (other developer's algorithm)
+    const destinationCount = this.calculateDestinationCount(
+      tripDuration,
+      travelStyle,
+    );
+
+    // Step 2: Build interest weight lookup map (other developer's algorithm)
+    const weightMap = this.normalizeInterestWeights(userInterests);
+
+    // Step 3: Filter attractions (other developer's algorithm)
+    const filteredAttractions = this.filterAttractions(
+      availableAttractions,
+      filterCriteria,
+      weightMap,
+    );
+
+    // Step 4: Score ALL filtered attractions (other developer's algorithm).
+    // Unlike selectAttractions(), we do NOT cap at recommendedDestinationCount here —
+    // the greedy algorithm needs the full pool to generate meaningfully different plans.
+    const rawPool = filteredAttractions.map((attraction) => ({
+      attraction,
+      interestScore: this.calculateInterestScore(attraction, weightMap),
+    }));
+
+    // Step 5: Generate candidate plans (greedy algorithm — my responsibility)
+    const unrankedPlans = runPlanGeneration(rawPool, destinationCount);
+
+    // Step 6: Rank plans by composite score (my responsibility)
+    const candidatePlans = rankPlans(unrankedPlans);
+
+    return {
+      destinationCount,
+      candidatePlans,
     };
   }
 
