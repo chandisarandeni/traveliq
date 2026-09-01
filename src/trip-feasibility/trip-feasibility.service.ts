@@ -10,12 +10,14 @@ import { TimeItineraryResult } from './interfaces/time-itinerary-result.interfac
 
 @Injectable()
 export class TripFeasibilityService {
+  // Public service method used by the controller and future module integrations.
   calculateItinerary(dto: CalculateTripItineraryDto): TimeItineraryResult {
     const input = this.validateAndNormalize(dto);
 
     return scheduleItinerary(input);
   }
 
+  // Keep validation at the NestJS service boundary so the algorithm stays pure.
   private validateAndNormalize(
     dto: CalculateTripItineraryDto,
   ): CalculateTripItineraryInput {
@@ -52,6 +54,7 @@ export class TripFeasibilityService {
     };
   }
 
+  // Selected attractions provide visit time and activity cost for each stop.
   private validateSelectedAttractions(
     selectedAttractions: SelectedAttractionInput[],
   ): SelectedAttractionInput[] {
@@ -87,6 +90,7 @@ export class TripFeasibilityService {
     return selectedAttractions;
   }
 
+  // Route Optimization provides the order and travel data; this module only validates and consumes it.
   private validateOptimizedRoute(
     optimizedRoute: OptimizedRouteInput,
   ): OptimizedRouteInput {
@@ -135,6 +139,7 @@ export class TripFeasibilityService {
     return optimizedRoute;
   }
 
+  // Each segment must have non-empty endpoints and non-negative travel values.
   private validateRouteSegment(segment: RouteSegment, index: number): void {
     const path = `optimizedRoute.routeSegments[${index}]`;
 
@@ -148,6 +153,7 @@ export class TripFeasibilityService {
     this.assertNonNegativeNumber(segment?.travelCost, `${path}.travelCost`);
   }
 
+  // The route must be continuous: destinations[i] -> destinations[i + 1].
   private assertRouteContinuity(optimizedRoute: OptimizedRouteInput): void {
     const { destinations, routeSegments } = optimizedRoute;
 
@@ -174,6 +180,7 @@ export class TripFeasibilityService {
     }
   }
 
+  // Recalculate totals from the detailed segments so inconsistent route summaries are rejected.
   private assertRouteTotalsAreConsistent(
     optimizedRoute: OptimizedRouteInput,
   ): void {
@@ -207,6 +214,7 @@ export class TripFeasibilityService {
     );
   }
 
+  // Every selected attraction must appear in the route by either ID or unique name.
   private assertRouteContainsSelectedAttractions(
     selectedAttractions: SelectedAttractionInput[],
     optimizedRoute: OptimizedRouteInput,
@@ -225,6 +233,7 @@ export class TripFeasibilityService {
     }
   }
 
+  // Duplicate names are allowed only when the route uses IDs, because names would be ambiguous.
   private assertDuplicateAttractionNamesAreNotAmbiguous(
     selectedAttractions: SelectedAttractionInput[],
     optimizedRoute: OptimizedRouteInput,
@@ -247,6 +256,7 @@ export class TripFeasibilityService {
     }
   }
 
+  // Small helper for validating supplied totalTravelTime/Distance/Cost.
   private sumRouteField(
     routeSegments: RouteSegment[],
     field: 'travelTime' | 'travelDistance' | 'travelCost',
@@ -258,6 +268,7 @@ export class TripFeasibilityService {
     );
   }
 
+  // Allows tiny decimal differences but rejects genuinely inconsistent totals.
   private assertNumbersMatch(
     calculated: number,
     supplied: number,
@@ -270,6 +281,7 @@ export class TripFeasibilityService {
     }
   }
 
+  // Location coordinates are optional today, but when present they must be valid numbers.
   private assertLocation(value: unknown, fieldName: string): void {
     if (!value || typeof value !== 'object') {
       throw new BadRequestException(`${fieldName} is required.`);
@@ -292,36 +304,42 @@ export class TripFeasibilityService {
     }
   }
 
+  // Used for tripDuration because a trip must be a whole number of days.
   private assertPositiveInteger(value: unknown, fieldName: string): void {
     if (!Number.isInteger(value) || Number(value) <= 0) {
       throw new BadRequestException(`${fieldName} must be a positive integer.`);
     }
   }
 
+  // Used for durations that may be decimal hours, such as 2.5 hours.
   private assertPositiveNumber(value: unknown, fieldName: string): void {
     if (!this.isFiniteNumber(value) || Number(value) <= 0) {
       throw new BadRequestException(`${fieldName} must be a positive number.`);
     }
   }
 
+  // Used for costs, distances, and travel times where zero is valid.
   private assertNonNegativeNumber(value: unknown, fieldName: string): void {
     if (!this.isFiniteNumber(value) || Number(value) < 0) {
       throw new BadRequestException(`${fieldName} must be zero or greater.`);
     }
   }
 
+  // Used for optional latitude and longitude when provided.
   private assertFiniteNumber(value: unknown, fieldName: string): void {
     if (!this.isFiniteNumber(value)) {
       throw new BadRequestException(`${fieldName} must be a valid number.`);
     }
   }
 
+  // Rejects empty route/location names before they reach the algorithm.
   private assertNonEmptyString(value: unknown, fieldName: string): void {
     if (typeof value !== 'string' || value.trim().length === 0) {
       throw new BadRequestException(`${fieldName} must be a non-empty string.`);
     }
   }
 
+  // Shared primitive check for all numeric validation helpers.
   private isFiniteNumber(value: unknown): value is number {
     return typeof value === 'number' && Number.isFinite(value);
   }

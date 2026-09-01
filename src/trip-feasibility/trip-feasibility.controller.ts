@@ -8,6 +8,7 @@ export class TripFeasibilityController {
     private readonly tripFeasibilityService: TripFeasibilityService,
   ) {}
 
+  // Main Trip Feasibility endpoint for this phase: time and itinerary only.
   @Post('itinerary')
   calculateItinerary(@Body() dto: CalculateTripItineraryDto) {
     return this.tripFeasibilityService.calculateItinerary(dto);

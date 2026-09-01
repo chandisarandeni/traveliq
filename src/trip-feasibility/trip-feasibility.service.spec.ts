@@ -5,6 +5,7 @@ import { CalculateTripItineraryDto } from './dto/calculate-trip-itinerary.dto';
 describe('TripFeasibilityService', () => {
   let service: TripFeasibilityService;
 
+  // Create a fresh service for each test so no itinerary state leaks between cases.
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [TripFeasibilityService],
@@ -17,18 +18,21 @@ describe('TripFeasibilityService', () => {
     expect(service).toBeDefined();
   });
 
+  // Covers the main happy path using the sample route from the implementation prompt.
   it('schedules a normal valid route', () => {
     const result = service.calculateItinerary(buildRequest());
 
     expect(result.timeFeasible).toBe(true);
     expect(result.requestedDays).toBe(4);
     expect(result.daysRequired).toBe(2);
+    expect(result.minimumDaysRequired).toBe(2);
     expect(result.unusedDays).toBe(2);
     expect(result.totalTravelTime).toBe(7.5);
     expect(result.totalVisitTime).toBe(8);
     expect(result.failureReasons).toEqual([]);
   });
 
+  // Proves greedy scheduling keeps adding destinations while both daily limits still fit.
   it('keeps two attractions on the same day when both limits allow it', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -46,6 +50,7 @@ describe('TripFeasibilityService', () => {
     ).toEqual(['Sigiriya', 'Dambulla']);
   });
 
+  // Proves the next destination is retried on a new day instead of being dropped.
   it('moves the next attraction to the next day when it does not fit today', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -62,6 +67,7 @@ describe('TripFeasibilityService', () => {
     expect(result.itinerary[1].startingLocation).toBe('Sigiriya');
   });
 
+  // Boundary test: equal to the max travel time is valid.
   it('allows travel time exactly equal to the daily travel limit', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -74,6 +80,7 @@ describe('TripFeasibilityService', () => {
     expect(result.itinerary[0].dailyTravelTime).toBe(5);
   });
 
+  // Impossible travel segments fail without attempting to split them across days.
   it('returns a failure when one segment exceeds the travel limit', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -90,6 +97,7 @@ describe('TripFeasibilityService', () => {
     );
   });
 
+  // A route step also fails when travel plus visit time exceeds realistic tourism hours.
   it('returns a failure when one destination exceeds daily tourism hours', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -104,6 +112,7 @@ describe('TripFeasibilityService', () => {
     );
   });
 
+  // The generated itinerary is still returned even when the tourist requested too few days.
   it('keeps the generated itinerary when required days exceed requested days', () => {
     const result = service.calculateItinerary(
       buildRequest({ tripDuration: 1 }),
@@ -117,6 +126,7 @@ describe('TripFeasibilityService', () => {
     );
   });
 
+  // Extra days are reported so the caller knows the plan fits with spare time.
   it('reports unused days when the trip uses fewer days than requested', () => {
     const result = service.calculateItinerary(
       buildRequest({ tripDuration: 5 }),
@@ -126,6 +136,7 @@ describe('TripFeasibilityService', () => {
     expect(result.unusedDays).toBe(3);
   });
 
+  // Smallest non-empty itinerary case.
   it('schedules one attraction correctly', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -138,6 +149,24 @@ describe('TripFeasibilityService', () => {
     expect(result.itinerary[0].destinations[0].attractionName).toBe('Sigiriya');
   });
 
+  // Final route legs are kept even when the ending location is not an attraction.
+  it('schedules travel to a separate ending location', () => {
+    const result = service.calculateItinerary(
+      buildRequest({
+        endingLocation: { name: 'Colombo' },
+        selectedAttractions: [attraction('A01', 'Sigiriya', 2)],
+        optimizedRoute: route(['Colombo', 'Sigiriya', 'Colombo'], [2, 2]),
+      }),
+    );
+
+    expect(result.timeFeasible).toBe(true);
+    expect(result.itinerary[0].startingLocation).toBe('Colombo');
+    expect(result.itinerary[0].endingLocation).toBe('Colombo');
+    expect(result.itinerary[0].destinations).toHaveLength(1);
+    expect(result.itinerary[0].routeSegments).toHaveLength(2);
+  });
+
+  // Empty attraction lists should produce a valid empty schedule, not a crash.
   it('handles no attractions without crashing', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -151,6 +180,7 @@ describe('TripFeasibilityService', () => {
     expect(result.itinerary).toEqual([]);
   });
 
+  // Route destinations and routeSegments must match one-to-one.
   it('rejects a missing route segment', () => {
     expect(() =>
       service.calculateItinerary(
@@ -175,6 +205,7 @@ describe('TripFeasibilityService', () => {
     ).toThrow('optimizedRoute.destinations must include one more entry');
   });
 
+  // Travel time cannot be negative.
   it('rejects negative travel time', () => {
     expect(() =>
       service.calculateItinerary(
@@ -186,6 +217,7 @@ describe('TripFeasibilityService', () => {
     ).toThrow('travelTime must be zero or greater');
   });
 
+  // Visit duration must be positive because a zero-hour attraction is not schedulable work.
   it('rejects negative visit duration', () => {
     expect(() =>
       service.calculateItinerary({
@@ -195,6 +227,7 @@ describe('TripFeasibilityService', () => {
     ).toThrow('visitDuration must be a positive number');
   });
 
+  // Starting location can be a city/hotel/airport outside selected attractions.
   it('allows the starting point to be outside the selected attractions', () => {
     const result = service.calculateItinerary(buildRequest());
 
@@ -202,6 +235,7 @@ describe('TripFeasibilityService', () => {
     expect(result.itinerary[0].destinations[0].attractionName).toBe('Sigiriya');
   });
 
+  // When a new day starts, it starts where the previous day ended.
   it('preserves route continuity across days', () => {
     const result = service.calculateItinerary(buildRequest());
 
@@ -210,6 +244,7 @@ describe('TripFeasibilityService', () => {
     );
   });
 
+  // The scheduler may split the route into days, but it must never reorder attractions.
   it('preserves the original route order', () => {
     const result = service.calculateItinerary(buildRequest());
     const flattenedRoute = result.itinerary.flatMap((day) =>
@@ -219,6 +254,7 @@ describe('TripFeasibilityService', () => {
     expect(flattenedRoute).toEqual(['Sigiriya', 'Dambulla', 'Kandy']);
   });
 
+  // Zero travel time is allowed, for example nearby attractions or same-location visits.
   it('allows zero travel time', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -231,18 +267,21 @@ describe('TripFeasibilityService', () => {
     expect(result.itinerary[0].dailyTravelTime).toBe(0);
   });
 
+  // Trip duration must be at least one day.
   it('rejects invalid trip duration', () => {
     expect(() =>
       service.calculateItinerary(buildRequest({ tripDuration: 0 })),
     ).toThrow('tripDuration must be a positive integer');
   });
 
+  // Daily travel limit must be positive.
   it('rejects invalid max daily travel time', () => {
     expect(() =>
       service.calculateItinerary(buildRequest({ maxDailyTravelTime: 0 })),
     ).toThrow('maxDailyTravelTime must be a positive number');
   });
 
+  // Safety check for the peek/retry loop: impossible steps must exit quickly.
   it('does not enter an infinite loop when a destination cannot fit', () => {
     const startedAt = Date.now();
     const result = service.calculateItinerary(
@@ -256,6 +295,7 @@ describe('TripFeasibilityService', () => {
     expect(result.timeFeasible).toBe(false);
   });
 
+  // Name-based routes cannot safely identify which attraction to schedule when names repeat.
   it('rejects ambiguous duplicate attraction names when the route uses names', () => {
     expect(() =>
       service.calculateItinerary(
@@ -270,6 +310,7 @@ describe('TripFeasibilityService', () => {
     ).toThrow('Use attraction IDs');
   });
 
+  // ID-based routes can safely schedule duplicate attraction names.
   it('supports duplicate names when the optimized route uses attraction IDs', () => {
     const result = service.calculateItinerary(
       buildRequest({
@@ -306,6 +347,7 @@ describe('TripFeasibilityService', () => {
   });
 });
 
+// Builds the default request used by most tests; individual cases override only what matters.
 function buildRequest(
   overrides: Partial<CalculateTripItineraryDto> = {},
 ): CalculateTripItineraryDto {
@@ -356,6 +398,7 @@ function buildRequest(
   };
 }
 
+// Test helper for selected attraction objects.
 function attraction(
   attractionId: string,
   attractionName: string,
@@ -372,6 +415,7 @@ function attraction(
   };
 }
 
+// Test helper that creates continuous route segments and matching route totals.
 function route(destinations: string[], travelTimes: number[]) {
   const routeSegments = travelTimes.map((travelTime, index) => ({
     from: destinations[index],

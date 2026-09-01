@@ -7,6 +7,7 @@ describe('TripFeasibilityController', () => {
   let controller: TripFeasibilityController;
   let service: TripFeasibilityService;
 
+  // Build a small Nest testing module so controller wiring is tested realistically.
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TripFeasibilityController],
@@ -23,6 +24,7 @@ describe('TripFeasibilityController', () => {
     expect(controller).toBeDefined();
   });
 
+  // Confirms the endpoint delegates request handling to the service.
   it('posts itinerary requests to the service', () => {
     const dto = {
       tripDuration: 1,

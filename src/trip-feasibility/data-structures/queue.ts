@@ -5,13 +5,18 @@
  * every dequeue. enqueue, dequeue, and peek are O(1) for this use case.
  */
 export class Queue<T> {
+  // Stores queued items without removing old array elements on each dequeue.
   private items: T[] = [];
+
+  // Points to the current front item in the queue.
   private head = 0;
 
+  // Adds a new item to the rear of the queue.
   enqueue(item: T): void {
     this.items.push(item);
   }
 
+  // Removes and returns the front item, or undefined when the queue is empty.
   dequeue(): T | undefined {
     if (this.isEmpty()) {
       return undefined;
@@ -29,6 +34,7 @@ export class Queue<T> {
     return item;
   }
 
+  // Returns the front item without removing it.
   peek(): T | undefined {
     if (this.isEmpty()) {
       return undefined;
@@ -37,10 +43,12 @@ export class Queue<T> {
     return this.items[this.head];
   }
 
+  // True when every queued item has already been dequeued.
   isEmpty(): boolean {
     return this.head >= this.items.length;
   }
 
+  // Number of items still waiting in the queue.
   size(): number {
     return this.items.length - this.head;
   }

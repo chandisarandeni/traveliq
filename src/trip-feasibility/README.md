@@ -32,6 +32,8 @@ The endpoint receives:
    - otherwise start a new day and retry the same step
 5. Return the generated itinerary even when it needs more days than requested.
 
+`daysRequired` and `minimumDaysRequired` currently mean the same thing: the minimum number of days required by the greedy scheduler under the given limits. The duplicate field keeps the old response compatible while making the meaning clearer for presentations.
+
 ## Data Structures
 
 - `Queue<T>` preserves the optimized route order with O(1) enqueue, dequeue, and peek.

@@ -1,6 +1,7 @@
 import { Queue } from './queue';
 
 describe('Queue', () => {
+  // Verifies that the queue preserves the same order as the optimized route.
   it('dequeues items in FIFO order', () => {
     const queue = new Queue<string>();
 
@@ -13,6 +14,7 @@ describe('Queue', () => {
     expect(queue.dequeue()).toBe('Kandy');
   });
 
+  // Verifies the scheduler can inspect the next destination before removing it.
   it('peeks without removing the next item', () => {
     const queue = new Queue<number>();
 
@@ -24,6 +26,7 @@ describe('Queue', () => {
     expect(queue.dequeue()).toBe(1);
   });
 
+  // Verifies empty queues are safe and report correct sizes.
   it('reports empty state and size correctly', () => {
     const queue = new Queue<string>();
 
