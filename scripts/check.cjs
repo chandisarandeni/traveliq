@@ -23,7 +23,7 @@ checks[checkName]().catch((error) => {
 });
 
 async function checkGeoapifyApi() {
-  // ============= Geoapify API =============
+  // ============= Geoapify Route Matrix API =============
   const apiKey = process.env.GEOAPIFY_API_KEY;
 
   if (!apiKey) {
@@ -31,14 +31,27 @@ async function checkGeoapifyApi() {
     process.exit(1);
   }
 
-  const address = '38 Upper Montagu Street, Westminster W1H 1LJ, United Kingdom';
-  const url = new URL('https://api.geoapify.com/v1/geocode/search');
-  url.searchParams.set('text', address);
+  const url = new URL('https://api.geoapify.com/v1/routematrix');
   url.searchParams.set('apiKey', apiKey);
+  const body = {
+    mode: 'drive',
+    sources: [
+      { location: [80.6337, 7.2906] },
+      { location: [80.6413, 7.2936] },
+    ],
+    targets: [
+      { location: [80.6337, 7.2906] },
+      { location: [80.6413, 7.2936] },
+    ],
+  };
 
   // --------------------- Live Request ------------------
   const response = await fetch(url, {
-    method: 'GET',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -48,17 +61,15 @@ async function checkGeoapifyApi() {
 
   const result = await response.json();
 
-  if (!Array.isArray(result.features) || result.features.length === 0) {
-    throw new Error('request succeeded but returned no geocoding features');
+  if (!Array.isArray(result.sources_to_targets) || !result.sources_to_targets[0]?.[1]) {
+    throw new Error('request succeeded but returned no route matrix value');
   }
 
-  const firstFeature = result.features[0];
-  const formattedAddress = firstFeature?.properties?.formatted ?? address;
-  const coordinates = firstFeature?.geometry?.coordinates;
+  const routeMatrixValue = result.sources_to_targets[0][1];
 
-  console.log(`Geoapify API check passed: GEOAPIFY_API_KEY is working (${maskValue(apiKey)})`);
-  console.log(`Matched address: ${formattedAddress}`);
-  console.log(`Coordinates: ${Array.isArray(coordinates) ? coordinates.join(', ') : 'Unavailable'}`);
+  console.log(`Geoapify Route Matrix API check passed: GEOAPIFY_API_KEY is working (${maskValue(apiKey)})`);
+  console.log(`Distance meters: ${routeMatrixValue.distance}`);
+  console.log(`Travel time seconds: ${routeMatrixValue.time}`);
 }
 
 function maskValue(value) {

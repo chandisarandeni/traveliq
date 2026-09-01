@@ -1,0 +1,308 @@
+{
+  "info": {
+    "_postman_id": "8fe7353a-dab7-4e83-b854-f9a19fb0f4305",
+    "name": "TravelIQ - Tourism Network APIs",
+    "description": "Postman collection for Module 3: Tourism Network Analysis. These requests cover graph generation, persisted graph retrieval, edge list access, adjacency-matrix connection lookup, DFS validation, and single-connection estimation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Tourism Network",
+      "description": "Module 3 endpoints under /api/tourism-network.",
+      "item": [
+        {
+          "name": "Generate Tourism Network",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"network is generated\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.networkId).to.be.a(\"string\");",
+                  "  pm.expect(response.candidatePlanId).to.eql(\"PLAN-001\");",
+                  "  pm.expect(response.nodes).to.be.an(\"array\");",
+                  "  pm.expect(response.connections).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.networkId) {",
+                  "  pm.collectionVariables.set(\"networkId\", response.networkId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destinationCount\": 4,\n  \"candidatePlans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"rank\": 1,\n      \"planInterestScore\": 8,\n      \"diversityScore\": 7,\n      \"planScore\": 7.7,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\n              \"HISTORY\",\n              \"CULTURE\",\n              \"NATURE\"\n            ],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\n              \"WILDLIFE\",\n              \"NATURE\"\n            ],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A04\",\n            \"name\": \"Ella Rock\",\n            \"categories\": [\n              \"NATURE\",\n              \"SCENIC\",\n              \"ADVENTURE\"\n            ],\n            \"latitude\": 6.8562,\n            \"longitude\": 81.0466,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 8,\n          \"normalizedScore\": 8\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A08\",\n            \"name\": \"Arugam Bay\",\n            \"categories\": [\n              \"BEACH\",\n              \"ADVENTURE\"\n            ],\n            \"latitude\": 6.8415,\n            \"longitude\": 81.8344,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 5,\n          \"normalizedScore\": 5\n        }\n      ]\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network"
+              ]
+            },
+            "description": "Creates one directed weighted tourism graph from the selected top-ranked Module 4 candidate plan. This calls Geoapify Route Matrix, builds the adjacency matrix and edge list, validates connectivity using DFS, and saves the network."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Complete Tourism Network",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"network is returned\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.networkId).to.eql(pm.collectionVariables.get(\"networkId\"));",
+                  "  pm.expect(response.connections).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network/{{networkId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network",
+                "{{networkId}}"
+              ]
+            },
+            "description": "Returns a saved tourism network without calling Geoapify again."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Connections",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"edge list is returned\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.connections).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network/{{networkId}}/connections",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network",
+                "{{networkId}}",
+                "connections"
+              ]
+            },
+            "description": "Returns the edge list representation used for API output and Module 1 consumption."
+          },
+          "response": []
+        },
+        {
+          "name": "Get One Connection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"one directed connection is returned\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.fromNodeId).to.eql(pm.collectionVariables.get(\"fromNodeId\"));",
+                  "  pm.expect(response.toNodeId).to.eql(pm.collectionVariables.get(\"toNodeId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network/{{networkId}}/connection?from={{fromNodeId}}&to={{toNodeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network",
+                "{{networkId}}",
+                "connection"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{fromNodeId}}",
+                  "description": "Source graph node ID, for example ATT001."
+                },
+                {
+                  "key": "to",
+                  "value": "{{toNodeId}}",
+                  "description": "Destination graph node ID, for example ATT002."
+                }
+              ]
+            },
+            "description": "Looks up a directed edge using HashMap node index lookup plus O(1) adjacency matrix access."
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Network",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"connectivity result is returned\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.connected).to.be.a(\"boolean\");",
+                  "  pm.expect(response.unreachableNodes).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network/{{networkId}}/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network",
+                "{{networkId}}",
+                "validate"
+              ]
+            },
+            "description": "Rebuilds the adjacency matrix from the persisted edge list and validates reachability using iterative DFS with a stack and visited Set."
+          },
+          "response": []
+        },
+        {
+          "name": "Estimate One Connection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"single connection estimate is returned\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.distanceKm).to.be.a(\"number\");",
+                  "  pm.expect(response.travelCost).to.be.a(\"number\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": {\n    \"name\": \"Temple of the Tooth\",\n    \"latitude\": 7.2936,\n    \"longitude\": 80.6413\n  },\n  \"to\": {\n    \"name\": \"Peradeniya Botanical Garden\",\n    \"latitude\": 7.2699,\n    \"longitude\": 80.5956\n  },\n  \"preferredTransportation\": \"private\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network/estimate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network",
+                "estimate"
+              ]
+            },
+            "description": "Tests one route connection without saving a complete tourism network."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3006"
+    },
+    {
+      "key": "networkId",
+      "value": "NET_REPLACE_AFTER_CREATE"
+    },
+    {
+      "key": "fromNodeId",
+      "value": "A01"
+    },
+    {
+      "key": "toNodeId",
+      "value": "A02"
+    }
+  ]
+}
