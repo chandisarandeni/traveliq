@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TripFeasibilityService } from './trip-feasibility.service';
+import { CalculateTripFeasibilityDto } from './dto/calculate-trip-feasibility.dto';
 import { CalculateTripItineraryDto } from './dto/calculate-trip-itinerary.dto';
 
 describe('TripFeasibilityService', () => {
@@ -345,6 +346,114 @@ describe('TripFeasibilityService', () => {
 
     expect(result.itinerary[0].destinations).toHaveLength(2);
   });
+
+  // Budget happy path: total budget covers trip cost while keeping the emergency reserve.
+  it('calculates full time and budget feasibility for an affordable trip', () => {
+    const result = service.calculateFeasibility(buildFeasibilityRequest());
+
+    expect(result.overallFeasible).toBe(true);
+    expect(result.time.timeFeasible).toBe(true);
+    expect(result.budget.budgetFeasible).toBe(true);
+    expect(result.budget.budgetBreakdown.totalTravelCost).toBe(10500);
+    expect(result.budget.budgetBreakdown.totalActivityCost).toBe(11500);
+    expect(result.budget.budgetBreakdown.totalFoodCost).toBe(14000);
+    expect(result.budget.budgetBreakdown.totalAccommodationCost).toBe(27000);
+    expect(result.budget.budgetBreakdown.totalEstimatedCost).toBe(63000);
+    expect(result.budget.budgetBreakdown.remainingBalance).toBe(117000);
+  });
+
+  // Budget uses requested trip duration when the itinerary needs fewer days.
+  it('budgets food and accommodation for the requested trip duration', () => {
+    const result = service.calculateFeasibility(
+      buildFeasibilityRequest({
+        tripDuration: 5,
+      }),
+    );
+
+    expect(result.time.minimumDaysRequired).toBe(2);
+    expect(result.budget.budgetBreakdown.plannedBudgetDays).toBe(5);
+    expect(result.budget.budgetBreakdown.accommodationNights).toBe(4);
+    expect(result.budget.budgetBreakdown.totalFoodCost).toBe(17500);
+    expect(result.budget.budgetBreakdown.totalAccommodationCost).toBe(36000);
+  });
+
+  // Budget uses minimum required days when the route cannot fit inside requested duration.
+  it('budgets for the minimum required days when time is infeasible', () => {
+    const result = service.calculateFeasibility(
+      buildFeasibilityRequest({
+        tripDuration: 1,
+      }),
+    );
+
+    expect(result.overallFeasible).toBe(false);
+    expect(result.time.timeFeasible).toBe(false);
+    expect(result.budget.budgetBreakdown.plannedBudgetDays).toBe(2);
+  });
+
+  // A low budget fails with a readable reason.
+  it('returns budget infeasible when estimated cost exceeds spendable budget', () => {
+    const result = service.calculateFeasibility(
+      buildFeasibilityRequest({
+        totalBudget: 50000,
+        minEmergencyReserve: 10000,
+      }),
+    );
+
+    expect(result.overallFeasible).toBe(false);
+    expect(result.budget.budgetFeasible).toBe(false);
+    expect(result.budget.failureReasons[0]).toContain(
+      'estimated trip cost is 63000 LKR',
+    );
+  });
+
+  // The emergency reserve cannot be larger than the total available budget.
+  it('returns budget infeasible when emergency reserve exceeds total budget', () => {
+    const result = service.calculateFeasibility(
+      buildFeasibilityRequest({
+        totalBudget: 10000,
+        minEmergencyReserve: 20000,
+      }),
+    );
+
+    expect(result.budget.budgetFeasible).toBe(false);
+    expect(result.budget.failureReasons[0]).toContain(
+      'emergency reserve of 20000 LKR',
+    );
+  });
+
+  // Different travel styles use different food/accommodation rates.
+  it('uses comfort cost estimates for comfort travelers', () => {
+    const result = service.calculateFeasibility(
+      buildFeasibilityRequest({
+        travelStyle: 'comfort',
+      }),
+    );
+
+    expect(result.budget.budgetBreakdown.dailyFoodCost).toBe(6000);
+    expect(result.budget.budgetBreakdown.nightlyAccommodationCost).toBe(18000);
+  });
+
+  // Travel style must match the configured cost profiles.
+  it('rejects invalid travel style', () => {
+    expect(() =>
+      service.calculateFeasibility(
+        buildFeasibilityRequest({
+          travelStyle: 'luxury',
+        }),
+      ),
+    ).toThrow('travelStyle must be one of');
+  });
+
+  // Transportation style is validated for consistency with user preferences.
+  it('rejects invalid transportation style', () => {
+    expect(() =>
+      service.calculateFeasibility(
+        buildFeasibilityRequest({
+          transportationStyle: 'spaceship',
+        }),
+      ),
+    ).toThrow('transportationStyle must be one of');
+  });
 });
 
 // Builds the default request used by most tests; individual cases override only what matters.
@@ -394,6 +503,20 @@ function buildRequest(
       totalTravelDistance: 265,
       totalTravelCost: 10500,
     },
+    ...overrides,
+  };
+}
+
+// Builds full feasibility requests with budget fields.
+function buildFeasibilityRequest(
+  overrides: Partial<CalculateTripFeasibilityDto> = {},
+): CalculateTripFeasibilityDto {
+  return {
+    ...buildRequest(),
+    totalBudget: 200000,
+    minEmergencyReserve: 20000,
+    travelStyle: 'balanced',
+    transportationStyle: 'private transport',
     ...overrides,
   };
 }

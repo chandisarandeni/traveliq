@@ -1,12 +1,24 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { calculateBudgetFeasibility } from './algorithms/budget-feasibility.algorithm';
 import { scheduleItinerary } from './algorithms/greedy-itinerary.algorithm';
-import { FLOAT_COMPARISON_EPSILON } from './constants/trip-feasibility.constants';
+import {
+  FLOAT_COMPARISON_EPSILON,
+  TRANSPORTATION_STYLES,
+  TRAVEL_STYLES,
+} from './constants/trip-feasibility.constants';
+import { CalculateTripFeasibilityDto } from './dto/calculate-trip-feasibility.dto';
 import { CalculateTripItineraryDto } from './dto/calculate-trip-itinerary.dto';
+import { CalculateTripFeasibilityInput } from './interfaces/calculate-trip-feasibility.interface';
 import { CalculateTripItineraryInput } from './interfaces/calculate-trip-itinerary.interface';
 import { OptimizedRouteInput } from './interfaces/optimized-route.interface';
 import { RouteSegment } from './interfaces/route-segment.interface';
 import { SelectedAttractionInput } from './interfaces/selected-attraction.interface';
 import { TimeItineraryResult } from './interfaces/time-itinerary-result.interface';
+import {
+  TransportationStyle,
+  TravelStyle,
+} from './interfaces/travel-style.interface';
+import { TripFeasibilityResult } from './interfaces/trip-feasibility-result.interface';
 
 @Injectable()
 export class TripFeasibilityService {
@@ -15,6 +27,22 @@ export class TripFeasibilityService {
     const input = this.validateAndNormalize(dto);
 
     return scheduleItinerary(input);
+  }
+
+  // Full Module 2 check for the current phase: time scheduling plus budget feasibility.
+  calculateFeasibility(
+    dto: CalculateTripFeasibilityDto,
+  ): TripFeasibilityResult {
+    const input = this.validateAndNormalizeFeasibility(dto);
+    const time = scheduleItinerary(input);
+    const budget = calculateBudgetFeasibility(input, time);
+
+    return {
+      overallFeasible: time.timeFeasible && budget.budgetFeasible,
+      time,
+      budget,
+      failureReasons: [...time.failureReasons, ...budget.failureReasons],
+    };
   }
 
   // Keep validation at the NestJS service boundary so the algorithm stays pure.
@@ -51,6 +79,32 @@ export class TripFeasibilityService {
       endingLocation: dto.endingLocation,
       selectedAttractions,
       optimizedRoute,
+    };
+  }
+
+  // Extends itinerary validation with budget fields needed by resource feasibility.
+  private validateAndNormalizeFeasibility(
+    dto: CalculateTripFeasibilityDto,
+  ): CalculateTripFeasibilityInput {
+    const itineraryInput = this.validateAndNormalize(dto);
+
+    this.assertPositiveNumber(dto.totalBudget, 'totalBudget');
+    this.assertNonNegativeNumber(
+      dto.minEmergencyReserve,
+      'minEmergencyReserve',
+    );
+
+    const travelStyle = this.assertTravelStyle(dto.travelStyle);
+    const transportationStyle = this.assertTransportationStyle(
+      dto.transportationStyle,
+    );
+
+    return {
+      ...itineraryInput,
+      totalBudget: dto.totalBudget,
+      minEmergencyReserve: dto.minEmergencyReserve,
+      travelStyle,
+      transportationStyle,
     };
   }
 
@@ -337,6 +391,28 @@ export class TripFeasibilityService {
     if (typeof value !== 'string' || value.trim().length === 0) {
       throw new BadRequestException(`${fieldName} must be a non-empty string.`);
     }
+  }
+
+  // Travel style must match one of the configured cost profiles.
+  private assertTravelStyle(value: unknown): TravelStyle {
+    if (!TRAVEL_STYLES.includes(value as TravelStyle)) {
+      throw new BadRequestException(
+        `travelStyle must be one of: ${TRAVEL_STYLES.join(', ')}.`,
+      );
+    }
+
+    return value as TravelStyle;
+  }
+
+  // Transport style is validated even though routeSegments already contain transport cost.
+  private assertTransportationStyle(value: unknown): TransportationStyle {
+    if (!TRANSPORTATION_STYLES.includes(value as TransportationStyle)) {
+      throw new BadRequestException(
+        `transportationStyle must be one of: ${TRANSPORTATION_STYLES.join(', ')}.`,
+      );
+    }
+
+    return value as TransportationStyle;
   }
 
   // Shared primitive check for all numeric validation helpers.
