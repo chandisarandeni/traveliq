@@ -1,0 +1,12 @@
+export enum InterestCategory {
+  BEACH = 'BEACH',
+  CULTURE = 'CULTURE',
+  HISTORY = 'HISTORY',
+  NATURE = 'NATURE',
+  ADVENTURE = 'ADVENTURE',
+  WILDLIFE = 'WILDLIFE',
+  RELIGIOUS = 'RELIGIOUS',
+  FOOD = 'FOOD',
+  SHOPPING = 'SHOPPING',
+  SCENIC = 'SCENIC',
+}
