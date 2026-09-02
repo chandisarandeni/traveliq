@@ -1,9 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { TourismNetworkService } from './tourism-network.service';
+import { Body, Controller, Get, Param, Post, Query, UsePipes, ValidationPipe } from '@nestjs/common';
 import { CreateTourismNetworkDto } from './dto/create-tourism-network.dto';
-import { UpdateTourismNetworkDto } from './dto/update-tourism-network.dto';
+import { EstimateConnectionDto } from './dto/estimate-connection.dto';
+import { TourismNetworkService } from './tourism-network.service';
 
-@Controller('tourism-network')
+@Controller('api/tourism-network')
+@UsePipes(
+  new ValidationPipe({
+    whitelist: true,
+    transform: true,
+  }),
+)
 export class TourismNetworkController {
   constructor(private readonly tourismNetworkService: TourismNetworkService) {}
 
@@ -12,23 +18,28 @@ export class TourismNetworkController {
     return this.tourismNetworkService.create(createTourismNetworkDto);
   }
 
-  @Get()
-  findAll() {
-    return this.tourismNetworkService.findAll();
+  @Get(':networkId')
+  findOne(@Param('networkId') networkId: string) {
+    return this.tourismNetworkService.findOne(networkId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tourismNetworkService.findOne(+id);
+  @Get(':networkId/connections')
+  getConnections(@Param('networkId') networkId: string) {
+    return this.tourismNetworkService.getConnections(networkId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTourismNetworkDto: UpdateTourismNetworkDto) {
-    return this.tourismNetworkService.update(+id, updateTourismNetworkDto);
+  @Get(':networkId/connection')
+  getConnection(@Param('networkId') networkId: string, @Query('from') from: string, @Query('to') to: string) {
+    return this.tourismNetworkService.getConnection(networkId, from, to);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tourismNetworkService.remove(+id);
+  @Post(':networkId/validate')
+  validate(@Param('networkId') networkId: string) {
+    return this.tourismNetworkService.validate(networkId);
+  }
+
+  @Post('estimate')
+  estimateConnection(@Body() estimateConnectionDto: EstimateConnectionDto) {
+    return this.tourismNetworkService.estimateConnection(estimateConnectionDto);
   }
 }

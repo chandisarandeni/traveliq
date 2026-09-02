@@ -8,7 +8,12 @@ describe('TourismNetworkController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TourismNetworkController],
-      providers: [TourismNetworkService],
+      providers: [
+        {
+          provide: TourismNetworkService,
+          useValue: {},
+        },
+      ],
     }).compile();
 
     controller = module.get<TourismNetworkController>(TourismNetworkController);
