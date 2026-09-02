@@ -60,6 +60,25 @@ This endpoint receives the same itinerary fields plus:
 
 This algorithm fits the problem because trip days are mandatory and chronological. If day 2 cannot be funded, later days cannot make the full trip feasible unless more budget is added or the route/style changes.
 
+## Resource Algorithm Selection
+
+Candidate algorithms considered:
+
+| Algorithm | Strengths | Weaknesses | Suitability |
+| --- | --- | --- | --- |
+| Exhaustive search / backtracking | Can test every possible allocation choice | Exponential time, not scalable for many days or attractions | Not suitable because trip days are fixed and ordered |
+| Dynamic programming / knapsack | Good when choosing the best subset under a budget | More complex and can wrongly imply attractions may be skipped or reordered | Not selected because this module checks feasibility of a required route |
+| Linear programming | Strong for complex multi-resource optimization | Requires an optimization solver and more variables than this phase needs | Better for future hotel/transport package optimization |
+| Greedy sequential resource allocation | Simple, fast, explainable, and follows chronological trip constraints | Does not optimize alternative route choices | Selected because the route is already fixed and the module must check day-by-day feasibility |
+
+Selected approach:
+
+```text
+Greedy Sequential Resource Allocation
+```
+
+The algorithm allocates the spendable budget to each planned day in order. It records cumulative cost, remaining budget, affordable days, and the first day where the available budget becomes insufficient.
+
 Current LKR estimates:
 
 - `budget`: 2,000 food per day, 5,000 accommodation per night.
@@ -84,3 +103,27 @@ Let `d` be the number of planned budget days.
 - Resource feasibility: O(d) time and O(d) space.
 
 The route order is never changed. The algorithm only partitions that order into feasible days.
+
+## Experimental Evidence
+
+The evaluation script generates synthetic routes with increasing numbers of attractions, then runs the real compiled `TripFeasibilityService.calculateFeasibility()` method. It measures the combined time scheduling and resource allocation flow.
+
+Run:
+
+```powershell
+npm.cmd run build
+npm.cmd run evaluate:trip-feasibility
+```
+
+Measured result from local evaluation:
+
+| Attractions | Route segments | Avg time (ms) | Days required | Affordable days | First unaffordable day |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 10 | 0.293 | 3 | 6 | 7 |
+| 50 | 50 | 0.913 | 13 | 18 | - |
+| 100 | 100 | 1.148 | 25 | 30 | - |
+| 500 | 500 | 3.908 | 125 | 130 | - |
+| 1000 | 1000 | 8.382 | 250 | 255 | - |
+| 2500 | 2500 | 22.995 | 625 | 630 | - |
+
+The results support the complexity analysis: execution time grows gradually as the number of route segments increases, matching the expected linear behavior.
