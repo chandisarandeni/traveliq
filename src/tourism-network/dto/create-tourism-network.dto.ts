@@ -1,6 +1,5 @@
 import { Type } from 'class-transformer';
 import {
-  ArrayMinSize,
   IsArray,
   IsEnum,
   IsNotEmpty,
@@ -16,11 +15,11 @@ import { TransportationMode } from '../enums/transportation-mode.enum';
 export class SelectedAttractionDto {
   @IsString()
   @IsNotEmpty()
-  id: string;
+  id!: string;
 
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsArray()
@@ -42,7 +41,7 @@ export class SelectedAttractionDto {
 export class CandidatePlanSelectedAttractionDto {
   @ValidateNested()
   @Type(() => SelectedAttractionDto)
-  attraction: SelectedAttractionDto;
+  attraction!: SelectedAttractionDto;
 
   @IsOptional()
   @IsNumber()
@@ -56,7 +55,7 @@ export class CandidatePlanSelectedAttractionDto {
 export class CandidatePlanDto {
   @IsString()
   @IsNotEmpty()
-  planId: string;
+  planId!: string;
 
   @IsOptional()
   @IsNumber()
@@ -75,23 +74,23 @@ export class CandidatePlanDto {
   planScore?: number;
 
   @IsArray()
-  selectedAttractions: unknown[];
+  selectedAttractions!: unknown[];
 }
 
 export class NetworkLocationDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsNumber()
   @Min(-90)
   @Max(90)
-  latitude: number;
+  latitude!: number;
 
   @IsNumber()
   @Min(-180)
   @Max(180)
-  longitude: number;
+  longitude!: number;
 }
 
 export class CreateTourismNetworkDto {
@@ -99,32 +98,19 @@ export class CreateTourismNetworkDto {
   @IsNumber()
   destinationCount?: number;
 
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  candidatePlanId?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ArrayMinSize(1)
-  @ValidateNested({ each: true })
-  @Type(() => SelectedAttractionDto)
-  selectedAttractions?: SelectedAttractionDto[];
-
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CandidatePlanDto)
-  candidatePlans?: CandidatePlanDto[];
+  candidatePlans!: CandidatePlanDto[];
 
   @IsEnum(TransportationMode)
-  preferredTransportation: TransportationMode;
+  preferredTransportation!: TransportationMode;
 
   @ValidateNested()
   @Type(() => NetworkLocationDto)
-  startingLocation: NetworkLocationDto;
+  startingLocation!: NetworkLocationDto;
 
   @ValidateNested()
   @Type(() => NetworkLocationDto)
-  endingLocation: NetworkLocationDto;
+  endingLocation!: NetworkLocationDto;
 }
