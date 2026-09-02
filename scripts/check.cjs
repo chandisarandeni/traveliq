@@ -67,12 +67,7 @@ async function checkGeoapifyApi() {
 
   const routeMatrixValue = result.sources_to_targets[0][1];
 
-  console.log(`Geoapify Route Matrix API check passed: GEOAPIFY_API_KEY is working (${maskValue(apiKey)})`);
+  console.log('Geoapify Route Matrix API check passed: GEOAPIFY_API_KEY is valid');
   console.log(`Distance meters: ${routeMatrixValue.distance}`);
   console.log(`Travel time seconds: ${routeMatrixValue.time}`);
-}
-
-function maskValue(value) {
-  // ============= Secret Masking =============
-  return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }

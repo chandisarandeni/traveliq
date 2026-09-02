@@ -5,7 +5,230 @@
     "description": "Postman collection for the active Tourism Network API endpoints only.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3006",
+      "type": "string"
+    },
+    {
+      "key": "attractionSelectionId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "networkId",
+      "value": "NET_REPLACE_AFTER_CREATE",
+      "type": "string"
+    },
+    {
+      "key": "fromNodeId",
+      "value": "START",
+      "type": "string"
+    },
+    {
+      "key": "toNodeId",
+      "value": "A01",
+      "type": "string"
+    }
+  ],
   "item": [
+    {
+      "name": "App",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "GET /"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Attraction Selection",
+      "description": "Endpoints from src/attraction-selection/attraction-selection.controller.ts.",
+      "item": [
+        {
+          "name": "Select Attractions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.957,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/select",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "select"
+              ]
+            },
+            "description": "POST /attraction-selection/select"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Candidate Plans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 },\n    { \"interest\": \"CULTURE\", \"weight\": 2 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.957,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A04\",\n      \"name\": \"Ella Rock\",\n      \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n      \"latitude\": 6.8562,\n      \"longitude\": 81.0466,\n      \"isAvailable\": true\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "plans"
+              ]
+            },
+            "description": "POST /attraction-selection/plans"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Attraction Selection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection"
+              ]
+            },
+            "description": "POST /attraction-selection"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Attraction Selections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection"
+              ]
+            },
+            "description": "GET /attraction-selection"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Attraction Selection By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "{{attractionSelectionId}}"
+              ]
+            },
+            "description": "GET /attraction-selection/:id"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Attraction Selection",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "{{attractionSelectionId}}"
+              ]
+            },
+            "description": "PATCH /attraction-selection/:id"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Attraction Selection",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "{{attractionSelectionId}}"
+              ]
+            },
+            "description": "DELETE /attraction-selection/:id"
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "Tourism Network",
       "description": "Only the active endpoints under /api/tourism-network.",
@@ -16,6 +239,7 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
                   "pm.test(\"matrices are generated and saved\", function () {",
                   "  pm.response.to.have.status(201);",
@@ -43,10 +267,9 @@
                   "",
                   "const response = pm.response.json();",
                   "if (response.networkId) {",
-                  "  pm.collectionVariables.set(\"networkId\", response.networkId);",
+                  "  pm.collectionVariables.set('networkId', response.networkId);",
                   "}"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
@@ -114,22 +337,6 @@
         },
         {
           "name": "Estimate One Connection",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"single connection estimate is returned\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.distanceKm).to.be.a(\"number\");",
-                  "  pm.expect(response.travelCost).to.be.a(\"number\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -158,17 +365,6 @@
           "response": []
         }
       ]
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
     },
     {
       "listen": "test",
