@@ -408,6 +408,44 @@ describe('TripFeasibilityService', () => {
     ]);
   });
 
+  it('saves itinerary calculations when a persistence model is available', async () => {
+    const create = jest.fn().mockResolvedValue({});
+    const savingService = new TripFeasibilityService({ create } as never);
+    const dto = buildRequest();
+
+    const result = await savingService.calculateAndSaveItinerary(dto);
+
+    expect(result.timeFeasible).toBe(true);
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        calculationType: 'itinerary',
+        requestSnapshot: dto,
+        resultSnapshot: result,
+        timeFeasible: true,
+      }),
+    );
+  });
+
+  it('saves full feasibility calculations when a persistence model is available', async () => {
+    const create = jest.fn().mockResolvedValue({});
+    const savingService = new TripFeasibilityService({ create } as never);
+    const dto = buildFeasibilityRequest();
+
+    const result = await savingService.calculateAndSaveFeasibility(dto);
+
+    expect(result.overallFeasible).toBe(true);
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        calculationType: 'feasibility',
+        requestSnapshot: dto,
+        resultSnapshot: result,
+        overallFeasible: true,
+        timeFeasible: true,
+        budgetFeasible: true,
+      }),
+    );
+  });
+
   // Budget uses requested trip duration when the itinerary needs fewer days.
   it('budgets food and accommodation for the requested trip duration', () => {
     const result = service.calculateFeasibility(

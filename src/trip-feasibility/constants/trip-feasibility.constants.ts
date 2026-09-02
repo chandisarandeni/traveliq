@@ -1,6 +1,9 @@
 // All time values in Trip Feasibility are measured in hours.
 export const MAX_DAILY_TOURISM_HOURS = 10;
 
+// Default Nest Mongoose injection token for the TripFeasibility model.
+export const TRIP_FEASIBILITY_MODEL = 'TripFeasibilityModel';
+
 // Decimal travel times such as 2.5 can create tiny floating point differences.
 export const FLOAT_COMPARISON_EPSILON = 0.001;
 
@@ -51,6 +54,6 @@ export const PROVINCE_COST_MULTIPLIER = {
   Uva: 0.95,
   Northern: 0.92,
   'North Central': 0.92,
-  'North Western': 0.90,
-  Sabaragamuwa: 0.90,
+  'North Western': 0.9,
+  Sabaragamuwa: 0.9,
 } as const;

@@ -12,12 +12,12 @@ export class TripFeasibilityController {
   // Main Trip Feasibility endpoint for this phase: time and itinerary only.
   @Post('itinerary')
   calculateItinerary(@Body() dto: CalculateTripItineraryDto) {
-    return this.tripFeasibilityService.calculateItinerary(dto);
+    return this.tripFeasibilityService.calculateAndSaveItinerary(dto);
   }
 
   // Full feasibility endpoint: returns both time and budget feasibility.
   @Post('feasibility')
   calculateFeasibility(@Body() dto: CalculateTripFeasibilityDto) {
-    return this.tripFeasibilityService.calculateFeasibility(dto);
+    return this.tripFeasibilityService.calculateAndSaveFeasibility(dto);
   }
 }
