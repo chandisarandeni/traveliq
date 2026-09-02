@@ -1,34 +1,63 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { RouteOptimizationService } from './route-optimization.service';
-import { CreateRouteOptimizationDto } from './dto/create-route-optimization.dto';
-import { UpdateRouteOptimizationDto } from './dto/update-route-optimization.dto';
+import { MockDataService } from './services/mock-data.service';
+import { OptimizePlansDto, OptimizeSinglePlanDto } from './dto/optimize-route.dto';
+import type { OptimizedPlanResult } from './interfaces/route-optimization.interface';
 
 @Controller('route-optimization')
 export class RouteOptimizationController {
-  constructor(private readonly routeOptimizationService: RouteOptimizationService) {}
+  constructor(
+    private readonly routeOptimizationService: RouteOptimizationService,
+    private readonly mockDataService: MockDataService,
+  ) { }
 
-  @Post()
-  create(@Body() createRouteOptimizationDto: CreateRouteOptimizationDto) {
-    return this.routeOptimizationService.create(createRouteOptimizationDto);
+  @Post('optimize')
+  @HttpCode(HttpStatus.OK)
+  optimizeRoute(
+    @Body() body: OptimizePlansDto | OptimizeSinglePlanDto | OptimizeSinglePlanDto[],
+  ): OptimizedPlanResult | OptimizedPlanResult[] {
+    // 1. If payload is an object containing a 'plans' array ({ plans: [...] })
+    if (body && typeof body === 'object' && 'plans' in body && Array.isArray((body as OptimizePlansDto).plans)) {
+      return this.routeOptimizationService.optimizePlans((body as OptimizePlansDto).plans);
+    }
+
+    // 2. If payload is directly an array of plans ([ {...}, {...} ])
+    if (Array.isArray(body)) {
+      return this.routeOptimizationService.optimizePlans(body as OptimizeSinglePlanDto[]);
+    }
+
+    // 3. If payload is a single plan object
+    return this.routeOptimizationService.optimizeSinglePlan(body as OptimizeSinglePlanDto);
   }
 
-  @Get()
-  findAll() {
-    return this.routeOptimizationService.findAll();
+  @Get('mock-data')
+  getMockData(): OptimizedPlanResult[] {
+    const sampleData = this.mockDataService.getSampleNetworkAnalysisData();
+    return this.routeOptimizationService.optimizePlans(sampleData.plans);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.routeOptimizationService.findOne(+id);
-  }
+  @Post('optimize-best')
+  @HttpCode(HttpStatus.OK)
+  optimizeBestPlan(
+    @Body() body: OptimizePlansDto | OptimizeSinglePlanDto | OptimizeSinglePlanDto[],
+  ): OptimizedPlanResult {
+    let plans: OptimizeSinglePlanDto[] = [];
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRouteOptimizationDto: UpdateRouteOptimizationDto) {
-    return this.routeOptimizationService.update(+id, updateRouteOptimizationDto);
-  }
+    if (body && typeof body === 'object' && 'plans' in body && Array.isArray((body as OptimizePlansDto).plans)) {
+      plans = (body as OptimizePlansDto).plans;
+    } else if (Array.isArray(body)) {
+      plans = body as OptimizeSinglePlanDto[];
+    } else if (body && typeof body === 'object') {
+      plans = [body as OptimizeSinglePlanDto];
+    }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.routeOptimizationService.remove(+id);
+    return this.routeOptimizationService.optimizeBestPlan(plans);
   }
 }
