@@ -63,6 +63,12 @@ export class TripFeasibilityService {
     );
     const optimizedRoute = this.validateOptimizedRoute(dto.optimizedRoute);
 
+    this.assertRouteMatchesRequestedEndpoints(
+      dto.startingLocation.name,
+      dto.endingLocation.name,
+      selectedAttractions,
+      optimizedRoute,
+    );
     this.assertDuplicateAttractionNamesAreNotAmbiguous(
       selectedAttractions,
       optimizedRoute,
@@ -285,6 +291,53 @@ export class TripFeasibilityService {
         );
       }
     }
+  }
+
+  // The optimized route must represent the same journey requested by the tourist.
+  private assertRouteMatchesRequestedEndpoints(
+    startingLocationName: string,
+    endingLocationName: string,
+    selectedAttractions: SelectedAttractionInput[],
+    optimizedRoute: OptimizedRouteInput,
+  ): void {
+    if (optimizedRoute.destinations.length === 0) {
+      return;
+    }
+
+    const firstDestination = optimizedRoute.destinations[0];
+    const finalDestination =
+      optimizedRoute.destinations[optimizedRoute.destinations.length - 1];
+
+    if (firstDestination !== startingLocationName) {
+      throw new BadRequestException(
+        `optimizedRoute must start at startingLocation ${startingLocationName}.`,
+      );
+    }
+
+    if (
+      finalDestination !== endingLocationName &&
+      !this.isDestinationForLocation(
+        finalDestination,
+        endingLocationName,
+        selectedAttractions,
+      )
+    ) {
+      throw new BadRequestException(
+        `optimizedRoute must end at endingLocation ${endingLocationName}.`,
+      );
+    }
+  }
+
+  private isDestinationForLocation(
+    destination: string,
+    locationName: string,
+    selectedAttractions: SelectedAttractionInput[],
+  ): boolean {
+    return selectedAttractions.some(
+      (attraction) =>
+        attraction.attractionName === locationName &&
+        attraction.attractionId === destination,
+    );
   }
 
   // Duplicate names are allowed only when the route uses IDs, because names would be ambiguous.

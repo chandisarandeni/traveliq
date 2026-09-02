@@ -37,6 +37,7 @@ describe('TripFeasibilityService', () => {
   it('keeps two attractions on the same day when both limits allow it', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Dambulla' },
         selectedAttractions: [
           attraction('A01', 'Sigiriya', 2),
           attraction('A02', 'Dambulla', 2),
@@ -55,6 +56,7 @@ describe('TripFeasibilityService', () => {
   it('moves the next attraction to the next day when it does not fit today', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Dambulla' },
         selectedAttractions: [
           attraction('A01', 'Sigiriya', 5),
           attraction('A02', 'Dambulla', 4),
@@ -72,6 +74,7 @@ describe('TripFeasibilityService', () => {
   it('allows travel time exactly equal to the daily travel limit', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Sigiriya' },
         selectedAttractions: [attraction('A01', 'Sigiriya', 2)],
         optimizedRoute: route(['Colombo', 'Sigiriya'], [5]),
       }),
@@ -85,6 +88,7 @@ describe('TripFeasibilityService', () => {
   it('returns a failure when one segment exceeds the travel limit', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Jaffna' },
         selectedAttractions: [attraction('A01', 'Jaffna', 2)],
         optimizedRoute: route(['Colombo', 'Jaffna'], [7]),
       }),
@@ -102,6 +106,7 @@ describe('TripFeasibilityService', () => {
   it('returns a failure when one destination exceeds daily tourism hours', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Sigiriya' },
         selectedAttractions: [attraction('A01', 'Sigiriya', 9)],
         optimizedRoute: route(['Colombo', 'Sigiriya'], [2]),
       }),
@@ -141,6 +146,7 @@ describe('TripFeasibilityService', () => {
   it('schedules one attraction correctly', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Sigiriya' },
         selectedAttractions: [attraction('A01', 'Sigiriya', 3)],
         optimizedRoute: route(['Colombo', 'Sigiriya'], [4]),
       }),
@@ -236,6 +242,28 @@ describe('TripFeasibilityService', () => {
     expect(result.itinerary[0].destinations[0].attractionName).toBe('Sigiriya');
   });
 
+  // The supplied route must start from the tourist's requested starting location.
+  it('rejects a route that starts somewhere else', () => {
+    expect(() =>
+      service.calculateItinerary(
+        buildRequest({
+          optimizedRoute: route(['Galle', 'Sigiriya', 'Kandy'], [2, 2]),
+        }),
+      ),
+    ).toThrow('optimizedRoute must start at startingLocation Colombo');
+  });
+
+  // The supplied route must reach the tourist's requested ending location.
+  it('rejects a route that ends somewhere else', () => {
+    expect(() =>
+      service.calculateItinerary(
+        buildRequest({
+          optimizedRoute: route(['Colombo', 'Sigiriya', 'Dambulla'], [2, 2]),
+        }),
+      ),
+    ).toThrow('optimizedRoute must end at endingLocation Kandy');
+  });
+
   // When a new day starts, it starts where the previous day ended.
   it('preserves route continuity across days', () => {
     const result = service.calculateItinerary(buildRequest());
@@ -259,6 +287,7 @@ describe('TripFeasibilityService', () => {
   it('allows zero travel time', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Sigiriya' },
         selectedAttractions: [attraction('A01', 'Sigiriya', 3)],
         optimizedRoute: route(['Colombo', 'Sigiriya'], [0]),
       }),
@@ -287,6 +316,7 @@ describe('TripFeasibilityService', () => {
     const startedAt = Date.now();
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Sigiriya' },
         selectedAttractions: [attraction('A01', 'Sigiriya', 11)],
         optimizedRoute: route(['Colombo', 'Sigiriya'], [0]),
       }),
@@ -301,6 +331,7 @@ describe('TripFeasibilityService', () => {
     expect(() =>
       service.calculateItinerary(
         buildRequest({
+          endingLocation: { name: 'Temple' },
           selectedAttractions: [
             attraction('A01', 'Temple', 2),
             attraction('A02', 'Temple', 2),
@@ -315,6 +346,7 @@ describe('TripFeasibilityService', () => {
   it('supports duplicate names when the optimized route uses attraction IDs', () => {
     const result = service.calculateItinerary(
       buildRequest({
+        endingLocation: { name: 'Temple' },
         selectedAttractions: [
           attraction('A01', 'Temple', 2),
           attraction('A02', 'Temple', 2),
