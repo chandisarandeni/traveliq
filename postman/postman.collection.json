@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "8c3df1b2-3a56-4c9b-98b7-6582a839f992",
-    "name": "TravelIQ - Attraction Selection & Trip Planning API",
-    "description": "Postman collection for TravelIQ backend API, specifically the Intelligent Decision / Attraction Selection and Candidate Plan Generation modules.",
+    "name": "TravelIQ API",
+    "description": "Clean Postman collection generated from the NestJS controllers in this repository.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -10,107 +10,58 @@
       "key": "baseUrl",
       "value": "http://localhost:3006",
       "type": "string"
+    },
+    {
+      "key": "attractionSelectionId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "networkId",
+      "value": "NET_REPLACE_AFTER_CREATE",
+      "type": "string"
+    },
+    {
+      "key": "fromNodeId",
+      "value": "START",
+      "type": "string"
+    },
+    {
+      "key": "toNodeId",
+      "value": "A01",
+      "type": "string"
     }
   ],
   "item": [
     {
-      "name": "Attraction Selection",
+      "name": "App",
       "item": [
         {
-          "name": "Generate 5 Candidate Plans (with Coordinates & Trip Context)",
-    "_postman_id": "8fe7353a-dab7-4e83-b854-f9a19fb0f4305",
-    "name": "TravelIQ - Tourism Network APIs",
-    "description": "Postman collection for Module 3: Tourism Network Analysis. These requests cover graph generation, persisted graph retrieval, edge list access, adjacency-matrix connection lookup, DFS validation, and single-connection estimation.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "GET /"
+          },
+          "response": []
+        }
+      ]
+    },
     {
-      "name": "Tourism Network",
-      "description": "Module 3 endpoints under /api/tourism-network.",
+      "name": "Attraction Selection",
+      "description": "Endpoints from src/attraction-selection/attraction-selection.controller.ts.",
       "item": [
         {
-          "name": "Generate Tourism Network",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Response has valid destinationCount and candidatePlans array\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property(\"destinationCount\");",
-                  "    pm.expect(jsonData.destinationCount).to.be.a(\"number\");",
-                  "    pm.expect(jsonData).to.have.property(\"candidatePlans\");",
-                  "    pm.expect(jsonData.candidatePlans).to.be.an(\"array\");",
-                  "    pm.expect(jsonData.candidatePlans.length).to.be.at.least(1);",
-                  "    pm.expect(jsonData.candidatePlans.length).to.be.at.most(5);",
-                  "});",
-                  "",
-                  "pm.test(\"Each attraction contains latitude and longitude coordinates\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    jsonData.candidatePlans.forEach((plan) => {",
-                  "        plan.selectedAttractions.forEach((item) => {",
-                  "            pm.expect(item.attraction).to.have.property(\"latitude\");",
-                  "            pm.expect(item.attraction).to.have.property(\"longitude\");",
-                  "            pm.expect(item.attraction.latitude).to.be.a(\"number\");",
-                  "            pm.expect(item.attraction.longitude).to.be.a(\"number\");",
-                  "        });",
-                  "    });",
-                  "});",
-                  "",
-                  "pm.test(\"Candidate plans have proper structure and ranking\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    jsonData.candidatePlans.forEach((plan, index) => {",
-                  "        pm.expect(plan).to.have.property(\"planId\");",
-                  "        pm.expect(plan).to.have.property(\"rank\", index + 1);",
-                  "        pm.expect(plan).to.have.property(\"planInterestScore\");",
-                  "        pm.expect(plan).to.have.property(\"diversityScore\");",
-                  "        pm.expect(plan).to.have.property(\"planScore\");",
-                  "        pm.expect(plan).to.have.property(\"selectedAttractions\");",
-                  "        pm.expect(plan.selectedAttractions.length).to.eql(jsonData.destinationCount);",
-                  "    });",
-                  "});",
-                  "",
-                  "pm.test(\"Plans are sorted descending by planScore\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    for (let i = 0; i < jsonData.candidatePlans.length - 1; i++) {",
-                  "        pm.expect(jsonData.candidatePlans[i].planScore).to.be.at.least(jsonData.candidatePlans[i + 1].planScore);",
-                  "    }",
-                  "});",
-                  "",
-                  "pm.test(\"Echoed trip context (transportation & coordinates) is present\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.preferredTransportation).to.eql(\"private\");",
-                  "    pm.expect(jsonData.startingLocation).to.be.an(\"object\");",
-                  "    pm.expect(jsonData.startingLocation.name).to.eql(\"Kandy Railway Station\");",
-                  "    pm.expect(jsonData.startingLocation.latitude).to.eql(7.2906);",
-                  "    pm.expect(jsonData.startingLocation.longitude).to.eql(80.6337);",
-                  "    pm.expect(jsonData.endingLocation).to.be.an(\"object\");",
-                  "    pm.expect(jsonData.endingLocation.name).to.eql(\"Kandy City Centre\");",
-                  "    pm.expect(jsonData.endingLocation.latitude).to.eql(7.2921);",
-                  "    pm.expect(jsonData.endingLocation.longitude).to.eql(80.6378);",
-                  "});"
-                  "pm.test(\"network is generated\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.networkId).to.be.a(\"string\");",
-                  "  pm.expect(response.candidatePlanId).to.eql(\"PLAN-001\");",
-                  "  pm.expect(response.nodes).to.be.an(\"array\");",
-                  "  pm.expect(response.connections).to.be.an(\"array\");",
-                  "});",
-                  "",
-                  "const response = pm.response.json();",
-                  "if (response.networkId) {",
-                  "  pm.collectionVariables.set(\"networkId\", response.networkId);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "Select Attractions",
           "request": {
             "method": "POST",
             "header": [
@@ -121,14 +72,38 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 },\n    { \"interest\": \"BEACH\", \"weight\": 3 },\n    { \"interest\": \"CULTURE\", \"weight\": 2 },\n    { \"interest\": \"ADVENTURE\", \"weight\": 2 },\n    { \"interest\": \"RELIGIOUS\", \"weight\": 1 },\n    { \"interest\": \"SCENIC\", \"weight\": 1 },\n    { \"interest\": \"SHOPPING\", \"weight\": 1 },\n    { \"interest\": \"FOOD\", \"weight\": 1 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.9570,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A04\",\n      \"name\": \"Ella Rock\",\n      \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n      \"latitude\": 6.8562,\n      \"longitude\": 81.0466,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A05\",\n      \"name\": \"Galle Fort\",\n      \"categories\": [\"HISTORY\", \"CULTURE\"],\n      \"latitude\": 6.0300,\n      \"longitude\": 80.2170,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A06\",\n      \"name\": \"Udawalawe National Park\",\n      \"categories\": [\"WILDLIFE\"],\n      \"latitude\": 6.4745,\n      \"longitude\": 80.8987,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A07\",\n      \"name\": \"Temple of the Tooth\",\n      \"categories\": [\"RELIGIOUS\", \"CULTURE\"],\n      \"latitude\": 7.2936,\n      \"longitude\": 80.6413,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A08\",\n      \"name\": \"Arugam Bay\",\n      \"categories\": [\"BEACH\", \"ADVENTURE\"],\n      \"latitude\": 6.8415,\n      \"longitude\": 81.8344,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A09\",\n      \"name\": \"Pettah Market\",\n      \"categories\": [\"SHOPPING\", \"FOOD\"],\n      \"latitude\": 6.9366,\n      \"longitude\": 79.8532,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A10\",\n      \"name\": \"Nuwara Eliya\",\n      \"categories\": [\"NATURE\", \"SCENIC\"],\n      \"latitude\": 6.9497,\n      \"longitude\": 80.7891,\n      \"isAvailable\": true\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
+              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.957,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/select",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "select"
+              ]
+            },
+            "description": "POST /attraction-selection/select"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Candidate Plans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 },\n    { \"interest\": \"CULTURE\", \"weight\": 2 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.957,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A04\",\n      \"name\": \"Ella Rock\",\n      \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n      \"latitude\": 6.8562,\n      \"longitude\": 81.0466,\n      \"isAvailable\": true\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/attraction-selection/plans",
-              "raw": "{\n  \"destinationCount\": 4,\n  \"candidatePlans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"rank\": 1,\n      \"planInterestScore\": 8,\n      \"diversityScore\": 7,\n      \"planScore\": 7.7,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\n              \"HISTORY\",\n              \"CULTURE\",\n              \"NATURE\"\n            ],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\n              \"WILDLIFE\",\n              \"NATURE\"\n            ],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A04\",\n            \"name\": \"Ella Rock\",\n            \"categories\": [\n              \"NATURE\",\n              \"SCENIC\",\n              \"ADVENTURE\"\n            ],\n            \"latitude\": 6.8562,\n            \"longitude\": 81.0466,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 8,\n          \"normalizedScore\": 8\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A08\",\n            \"name\": \"Arugam Bay\",\n            \"categories\": [\n              \"BEACH\",\n              \"ADVENTURE\"\n            ],\n            \"latitude\": 6.8415,\n            \"longitude\": 81.8344,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 5,\n          \"normalizedScore\": 5\n        }\n      ]\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/tourism-network",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -137,40 +112,140 @@
                 "plans"
               ]
             },
-            "description": "Generates 5 diverse, ranked candidate trip plans with diversity scores, interest scores, attraction coordinates (latitude, longitude), and pass-through trip context."
-                "api",
-                "tourism-network"
-              ]
-            },
-            "description": "Creates one directed weighted tourism graph from the selected top-ranked Module 4 candidate plan. This calls Geoapify Route Matrix, builds the adjacency matrix and edge list, validates connectivity using DFS, and saves the network."
+            "description": "POST /attraction-selection/plans"
           },
           "response": []
         },
         {
-          "name": "Select Attractions (Priority Heap Selection)",
-          "name": "Get Complete Tourism Network",
+          "name": "Create Attraction Selection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection"
+              ]
+            },
+            "description": "POST /attraction-selection"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Attraction Selections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection"
+              ]
+            },
+            "description": "GET /attraction-selection"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Attraction Selection By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "{{attractionSelectionId}}"
+              ]
+            },
+            "description": "GET /attraction-selection/:id"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Attraction Selection",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "{{attractionSelectionId}}"
+              ]
+            },
+            "description": "PATCH /attraction-selection/:id"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Attraction Selection",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attraction-selection",
+                "{{attractionSelectionId}}"
+              ]
+            },
+            "description": "DELETE /attraction-selection/:id"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tourism Network",
+      "description": "Endpoints from src/tourism-network/tourism-network.controller.ts.",
+      "item": [
+        {
+          "name": "Create Tourism Network",
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Response has recommendedDestinationCount and candidateAttractions\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property(\"recommendedDestinationCount\");",
-                  "    pm.expect(jsonData).to.have.property(\"candidateAttractions\");",
-                  "    pm.expect(jsonData.candidateAttractions).to.be.an(\"array\");",
-                  "pm.test(\"network is returned\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.networkId).to.eql(pm.collectionVariables.get(\"networkId\"));",
-                  "  pm.expect(response.connections).to.be.an(\"array\");",
-                  "});"
-                ],
-                "type": "text/javascript"
+                  "const response = pm.response.json();",
+                  "if (response.networkId) {",
+                  "  pm.collectionVariables.set('networkId', response.networkId);",
+                  "}"
+                ]
               }
             }
           ],
@@ -184,10 +259,25 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.9570,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    }\n  ]\n}"
+              "raw": "{\n  \"candidatePlanId\": \"PLAN-001\",\n  \"selectedAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Temple of the Tooth\",\n      \"categories\": [\"RELIGIOUS\", \"CULTURE\"],\n      \"latitude\": 7.2936,\n      \"longitude\": 80.6413\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Peradeniya Botanical Garden\",\n      \"categories\": [\"NATURE\", \"SCENIC\"],\n      \"latitude\": 7.2699,\n      \"longitude\": 80.5956\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/attraction-selection/select",
+              "raw": "{{baseUrl}}/api/tourism-network",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network"
+              ]
+            },
+            "description": "POST /api/tourism-network"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tourism Network By ID",
+          "request": {
             "method": "GET",
             "header": [],
             "url": {
@@ -201,27 +291,12 @@
                 "{{networkId}}"
               ]
             },
-            "description": "Returns a saved tourism network without calling Geoapify again."
+            "description": "GET /api/tourism-network/:networkId"
           },
           "response": []
         },
         {
-          "name": "Get All Connections",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"edge list is returned\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.connections).to.be.an(\"array\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "Get Tourism Network Connections",
           "request": {
             "method": "GET",
             "header": [],
@@ -237,28 +312,12 @@
                 "connections"
               ]
             },
-            "description": "Returns the edge list representation used for API output and Module 1 consumption."
+            "description": "GET /api/tourism-network/:networkId/connections"
           },
           "response": []
         },
         {
-          "name": "Get One Connection",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"one directed connection is returned\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.fromNodeId).to.eql(pm.collectionVariables.get(\"fromNodeId\"));",
-                  "  pm.expect(response.toNodeId).to.eql(pm.collectionVariables.get(\"toNodeId\"));",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "Get One Tourism Network Connection",
           "request": {
             "method": "GET",
             "header": [],
@@ -276,38 +335,20 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "{{fromNodeId}}",
-                  "description": "Source graph node ID, for example ATT001."
+                  "value": "{{fromNodeId}}"
                 },
                 {
                   "key": "to",
-                  "value": "{{toNodeId}}",
-                  "description": "Destination graph node ID, for example ATT002."
+                  "value": "{{toNodeId}}"
                 }
               ]
             },
-            "description": "Looks up a directed edge using HashMap node index lookup plus O(1) adjacency matrix access."
+            "description": "GET /api/tourism-network/:networkId/connection?from=:from&to=:to"
           },
           "response": []
         },
         {
-          "name": "Validate Network",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"connectivity result is returned\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.connected).to.be.a(\"boolean\");",
-                  "  pm.expect(response.unreachableNodes).to.be.an(\"array\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "Validate Tourism Network",
           "request": {
             "method": "POST",
             "header": [],
@@ -317,48 +358,18 @@
                 "{{baseUrl}}"
               ],
               "path": [
-                "attraction-selection",
-                "select"
-              ]
-            },
-            "description": "Selects top attractions using Max-Heap prioritization based on user interest scoring."
                 "api",
                 "tourism-network",
                 "{{networkId}}",
                 "validate"
               ]
             },
-            "description": "Rebuilds the adjacency matrix from the persisted edge list and validates reachability using iterative DFS with a stack and visited Set."
+            "description": "POST /api/tourism-network/:networkId/validate"
           },
           "response": []
         },
         {
-          "name": "Generate Plans - Adventure Travel Style",
           "name": "Estimate One Connection",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200 OK\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Destination count reflects ADVENTURE style formula\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    // 3 days ADVENTURE: (3 + 1) + 1 = 5",
-                  "    pm.expect(jsonData.destinationCount).to.eql(5);",
-                  "pm.test(\"single connection estimate is returned\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.distanceKm).to.be.a(\"number\");",
-                  "  pm.expect(response.travelCost).to.be.a(\"number\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -369,10 +380,6 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"ADVENTURE\",\n  \"userInterests\": [\n    { \"interest\": \"ADVENTURE\", \"weight\": 5 },\n    { \"interest\": \"NATURE\", \"weight\": 4 }\n  ],\n  \"availableAttractions\": [\n    { \"id\": \"A01\", \"name\": \"Sigiriya\", \"categories\": [\"HISTORY\", \"NATURE\"], \"latitude\": 7.9570, \"longitude\": 80.7603, \"isAvailable\": true },\n    { \"id\": \"A02\", \"name\": \"Yala\", \"categories\": [\"WILDLIFE\", \"NATURE\"], \"latitude\": 6.3725, \"longitude\": 81.5218, \"isAvailable\": true },\n    { \"id\": \"A03\", \"name\": \"Mirissa\", \"categories\": [\"BEACH\"], \"latitude\": 5.9483, \"longitude\": 80.4716, \"isAvailable\": true },\n    { \"id\": \"A04\", \"name\": \"Ella Rock\", \"categories\": [\"NATURE\", \"ADVENTURE\"], \"latitude\": 6.8562, \"longitude\": 81.0466, \"isAvailable\": true },\n    { \"id\": \"A05\", \"name\": \"Kitulgala Rafting\", \"categories\": [\"ADVENTURE\"], \"latitude\": 6.9942, \"longitude\": 80.4124, \"isAvailable\": true },\n    { \"id\": \"A06\", \"name\": \"Adam's Peak\", \"categories\": [\"ADVENTURE\", \"RELIGIOUS\"], \"latitude\": 6.8096, \"longitude\": 80.4994, \"isAvailable\": true }\n  ],\n  \"preferredTransportation\": \"public\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/attraction-selection/plans",
               "raw": "{\n  \"from\": {\n    \"name\": \"Temple of the Tooth\",\n    \"latitude\": 7.2936,\n    \"longitude\": 80.6413\n  },\n  \"to\": {\n    \"name\": \"Peradeniya Botanical Garden\",\n    \"latitude\": 7.2699,\n    \"longitude\": 80.5956\n  },\n  \"preferredTransportation\": \"private\"\n}"
             },
             "url": {
@@ -381,88 +388,221 @@
                 "{{baseUrl}}"
               ],
               "path": [
-                "attraction-selection",
-                "plans"
-              ]
-            }
                 "api",
                 "tourism-network",
                 "estimate"
               ]
             },
-            "description": "Tests one route connection without saving a complete tourism network."
+            "description": "POST /api/tourism-network/estimate"
           },
           "response": []
         }
       ]
     },
     {
-      "name": "App Health Check",
-      "event": [
+      "name": "Route Optimization",
+      "description": "Endpoints from src/route-optimization/route-optimization.controller.ts.",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code is 200 OK\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});"
+          "name": "Optimize Route",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "type": "text/javascript"
-          }
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"PLAN-001\",\n  \"startLocation\": \"Kandy Railway Station\",\n  \"endLocation\": \"Kandy City Centre\",\n  \"locations\": [\n    \"Temple of the Tooth\",\n    \"Peradeniya Botanical Garden\",\n    \"Kandy View Point\"\n  ],\n  \"distanceMatrix\": [\n    [0, 6.2, 2.4, 1.2, 0.8],\n    [6.2, 0, 7.1, 5.9, 6.5],\n    [2.4, 7.1, 0, 1.8, 2.2],\n    [1.2, 5.9, 1.8, 0, 1.1],\n    [0.8, 6.5, 2.2, 1.1, 0]\n  ],\n  \"timeMatrix\": [\n    [0, 0.35, 0.2, 0.12, 0.08],\n    [0.35, 0, 0.42, 0.33, 0.38],\n    [0.2, 0.42, 0, 0.15, 0.18],\n    [0.12, 0.33, 0.15, 0, 0.1],\n    [0.08, 0.38, 0.18, 0.1, 0]\n  ],\n  \"costMatrix\": [\n    [0, 744, 288, 144, 96],\n    [744, 0, 852, 708, 780],\n    [288, 852, 0, 216, 264],\n    [144, 708, 216, 0, 132],\n    [96, 780, 264, 132, 0]\n  ],\n  \"weights\": {\n    \"costWeight\": 0.5,\n    \"timeWeight\": 0.3,\n    \"distanceWeight\": 0.2\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/route-optimization/optimize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "route-optimization",
+                "optimize"
+              ]
+            },
+            "description": "POST /route-optimization/optimize"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Route Optimization Mock Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/route-optimization/mock-data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "route-optimization",
+                "mock-data"
+              ]
+            },
+            "description": "GET /route-optimization/mock-data"
+          },
+          "response": []
+        },
+        {
+          "name": "Optimize Best Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"startLocation\": \"Kandy Railway Station\",\n      \"endLocation\": \"Kandy City Centre\",\n      \"locations\": [\n        \"Temple of the Tooth\",\n        \"Peradeniya Botanical Garden\",\n        \"Kandy View Point\"\n      ],\n      \"distanceMatrix\": [\n        [0, 6.2, 2.4, 1.2, 0.8],\n        [6.2, 0, 7.1, 5.9, 6.5],\n        [2.4, 7.1, 0, 1.8, 2.2],\n        [1.2, 5.9, 1.8, 0, 1.1],\n        [0.8, 6.5, 2.2, 1.1, 0]\n      ],\n      \"timeMatrix\": [\n        [0, 0.35, 0.2, 0.12, 0.08],\n        [0.35, 0, 0.42, 0.33, 0.38],\n        [0.2, 0.42, 0, 0.15, 0.18],\n        [0.12, 0.33, 0.15, 0, 0.1],\n        [0.08, 0.38, 0.18, 0.1, 0]\n      ],\n      \"costMatrix\": [\n        [0, 744, 288, 144, 96],\n        [744, 0, 852, 708, 780],\n        [288, 852, 0, 216, 264],\n        [144, 708, 216, 0, 132],\n        [96, 780, 264, 132, 0]\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/route-optimization/optimize-best",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "route-optimization",
+                "optimize-best"
+              ]
+            },
+            "description": "POST /route-optimization/optimize-best"
+          },
+          "response": []
         }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            ""
-          ]
+      ]
+    },
+    {
+      "name": "Travel Plan Ranking",
+      "description": "Endpoints from src/travel-plan-ranking/travel-plan-ranking.controller.ts.",
+      "item": [
+        {
+          "name": "Rank Plans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidatePlans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"interestScore\": 86,\n      \"totalTravelTime\": 5.5,\n      \"daysRequired\": 3,\n      \"totalCost\": 75000,\n      \"feasible\": true\n    },\n    {\n      \"planId\": \"PLAN-002\",\n      \"interestScore\": 78,\n      \"totalTravelTime\": 7.25,\n      \"daysRequired\": 4,\n      \"totalCost\": 92000,\n      \"feasible\": true\n    }\n  ],\n  \"preferences\": {\n    \"budget\": 100000,\n    \"tripDuration\": 4,\n    \"maximumTravelTime\": 8,\n    \"weights\": {\n      \"interest\": 0.4,\n      \"budget\": 0.25,\n      \"travel\": 0.2,\n      \"time\": 0.15\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/travel-plan-ranking/rank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "travel-plan-ranking",
+                "rank"
+              ]
+            },
+            "description": "POST /travel-plan-ranking/rank"
+          },
+          "response": []
+        },
+        {
+          "name": "Greedy Rank Plans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidatePlans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"interestScore\": 86,\n      \"totalTravelTime\": 5.5,\n      \"daysRequired\": 3,\n      \"totalCost\": 75000,\n      \"feasible\": true\n    },\n    {\n      \"planId\": \"PLAN-002\",\n      \"interestScore\": 78,\n      \"totalTravelTime\": 7.25,\n      \"daysRequired\": 4,\n      \"totalCost\": 92000,\n      \"feasible\": true\n    }\n  ],\n  \"preferences\": {\n    \"budget\": 100000,\n    \"tripDuration\": 4,\n    \"maximumTravelTime\": 8,\n    \"weights\": {\n      \"interest\": 0.4,\n      \"budget\": 0.25,\n      \"travel\": 0.2,\n      \"time\": 0.15\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/travel-plan-ranking/greedy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "travel-plan-ranking",
+                "greedy"
+              ]
+            },
+            "description": "POST /travel-plan-ranking/greedy"
+          },
+          "response": []
         }
-      },
-      "response": []
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
+      ]
     },
     {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3006"
-    },
-    {
-      "key": "networkId",
-      "value": "NET_REPLACE_AFTER_CREATE"
-    },
-    {
-      "key": "fromNodeId",
-      "value": "A01"
-    },
-    {
-      "key": "toNodeId",
-      "value": "A02"
+      "name": "Trip Feasibility",
+      "description": "Endpoints from src/trip-feasibility/trip-feasibility.controller.ts.",
+      "item": [
+        {
+          "name": "Calculate Itinerary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"maxDailyTravelTime\": 4,\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  },\n  \"selectedAttractions\": [\n    {\n      \"attractionId\": \"A01\",\n      \"attractionName\": \"Temple of the Tooth\",\n      \"activityCost\": 2500,\n      \"visitDuration\": 2,\n      \"interestScore\": 9\n    },\n    {\n      \"attractionId\": \"A02\",\n      \"attractionName\": \"Peradeniya Botanical Garden\",\n      \"activityCost\": 3000,\n      \"visitDuration\": 3,\n      \"interestScore\": 8\n    }\n  ],\n  \"optimizedRoute\": {\n    \"destinations\": [\n      \"Kandy Railway Station\",\n      \"Temple of the Tooth\",\n      \"Peradeniya Botanical Garden\",\n      \"Kandy City Centre\"\n    ],\n    \"routeSegments\": [\n      {\n        \"from\": \"Kandy Railway Station\",\n        \"to\": \"Temple of the Tooth\",\n        \"travelTime\": 0.2,\n        \"travelDistance\": 1.2,\n        \"travelCost\": 144\n      },\n      {\n        \"from\": \"Temple of the Tooth\",\n        \"to\": \"Peradeniya Botanical Garden\",\n        \"travelTime\": 0.35,\n        \"travelDistance\": 6.2,\n        \"travelCost\": 744\n      },\n      {\n        \"from\": \"Peradeniya Botanical Garden\",\n        \"to\": \"Kandy City Centre\",\n        \"travelTime\": 0.38,\n        \"travelDistance\": 6.5,\n        \"travelCost\": 780\n      }\n    ],\n    \"totalTravelTime\": 0.93,\n    \"totalTravelDistance\": 13.9,\n    \"totalTravelCost\": 1668\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trip-feasibility/itinerary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trip-feasibility",
+                "itinerary"
+              ]
+            },
+            "description": "POST /trip-feasibility/itinerary"
+          },
+          "response": []
+        },
+        {
+          "name": "Calculate Feasibility",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripDuration\": 3,\n  \"maxDailyTravelTime\": 4,\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  },\n  \"selectedAttractions\": [\n    {\n      \"attractionId\": \"A01\",\n      \"attractionName\": \"Temple of the Tooth\",\n      \"activityCost\": 2500,\n      \"visitDuration\": 2,\n      \"interestScore\": 9\n    },\n    {\n      \"attractionId\": \"A02\",\n      \"attractionName\": \"Peradeniya Botanical Garden\",\n      \"activityCost\": 3000,\n      \"visitDuration\": 3,\n      \"interestScore\": 8\n    }\n  ],\n  \"optimizedRoute\": {\n    \"destinations\": [\n      \"Kandy Railway Station\",\n      \"Temple of the Tooth\",\n      \"Peradeniya Botanical Garden\",\n      \"Kandy City Centre\"\n    ],\n    \"routeSegments\": [\n      {\n        \"from\": \"Kandy Railway Station\",\n        \"to\": \"Temple of the Tooth\",\n        \"travelTime\": 0.2,\n        \"travelDistance\": 1.2,\n        \"travelCost\": 144\n      },\n      {\n        \"from\": \"Temple of the Tooth\",\n        \"to\": \"Peradeniya Botanical Garden\",\n        \"travelTime\": 0.35,\n        \"travelDistance\": 6.2,\n        \"travelCost\": 744\n      },\n      {\n        \"from\": \"Peradeniya Botanical Garden\",\n        \"to\": \"Kandy City Centre\",\n        \"travelTime\": 0.38,\n        \"travelDistance\": 6.5,\n        \"travelCost\": 780\n      }\n    ],\n    \"totalTravelTime\": 0.93,\n    \"totalTravelDistance\": 13.9,\n    \"totalTravelCost\": 1668\n  },\n  \"totalBudget\": 100000,\n  \"minEmergencyReserve\": 10000,\n  \"travelStyle\": \"balanced\",\n  \"transportationStyle\": \"private transport\",\n  \"province\": \"Central\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trip-feasibility/feasibility",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trip-feasibility",
+                "feasibility"
+              ]
+            },
+            "description": "POST /trip-feasibility/feasibility"
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
