@@ -12,4 +12,7 @@ export class CalculateTripFeasibilityDto extends CalculateTripItineraryDto {
 
   // One of: private transport, public transport.
   transportationStyle: string;
+
+  // Optional destination province; adjusts food and accommodation rates when given.
+  province?: string;
 }

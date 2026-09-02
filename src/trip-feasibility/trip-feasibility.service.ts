@@ -3,6 +3,7 @@ import { calculateBudgetFeasibility } from './algorithms/budget-feasibility.algo
 import { scheduleItinerary } from './algorithms/greedy-itinerary.algorithm';
 import {
   FLOAT_COMPARISON_EPSILON,
+  PROVINCES,
   TRANSPORTATION_STYLES,
   TRAVEL_STYLES,
 } from './constants/trip-feasibility.constants';
@@ -15,6 +16,7 @@ import { RouteSegment } from './interfaces/route-segment.interface';
 import { SelectedAttractionInput } from './interfaces/selected-attraction.interface';
 import { TimeItineraryResult } from './interfaces/time-itinerary-result.interface';
 import {
+  Province,
   TransportationStyle,
   TravelStyle,
 } from './interfaces/travel-style.interface';
@@ -104,6 +106,7 @@ export class TripFeasibilityService {
     const transportationStyle = this.assertTransportationStyle(
       dto.transportationStyle,
     );
+    const province = this.assertProvince(dto.province);
 
     return {
       ...itineraryInput,
@@ -111,6 +114,7 @@ export class TripFeasibilityService {
       minEmergencyReserve: dto.minEmergencyReserve,
       travelStyle,
       transportationStyle,
+      province,
     };
   }
 
@@ -466,6 +470,21 @@ export class TripFeasibilityService {
     }
 
     return value as TransportationStyle;
+  }
+
+  // Province is optional; when given it must match a configured pricing group.
+  private assertProvince(value: unknown): Province | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (!PROVINCES.includes(value as Province)) {
+      throw new BadRequestException(
+        `province must be one of: ${PROVINCES.join(', ')}.`,
+      );
+    }
+
+    return value as Province;
   }
 
   // Shared primitive check for all numeric validation helpers.

@@ -1,4 +1,7 @@
-import { TRAVEL_STYLE_COST_PROFILE } from '../constants/trip-feasibility.constants';
+import {
+  PROVINCE_COST_MULTIPLIER,
+  TRAVEL_STYLE_COST_PROFILE,
+} from '../constants/trip-feasibility.constants';
 import { BudgetDay } from '../interfaces/budget-day.interface';
 import { BudgetFeasibilityResult } from '../interfaces/budget-feasibility-result.interface';
 import { CalculateTripFeasibilityInput } from '../interfaces/calculate-trip-feasibility.interface';
@@ -37,19 +40,27 @@ export function calculateBudgetFeasibility(
   timeResult: TimeItineraryResult,
 ): BudgetFeasibilityResult {
   const costProfile = TRAVEL_STYLE_COST_PROFILE[input.travelStyle];
+  const provinceCostMultiplier = input.province
+    ? PROVINCE_COST_MULTIPLIER[input.province]
+    : 1;
+  const dailyFoodCost = Math.round(
+    costProfile.dailyFoodCost * provinceCostMultiplier,
+  );
+  const nightlyAccommodationCost = Math.round(
+    costProfile.nightlyAccommodationCost * provinceCostMultiplier,
+  );
   const plannedBudgetDays = getPlannedBudgetDays(input, timeResult);
   const accommodationNights = Math.max(plannedBudgetDays - 1, 0);
   const dailyCosts = buildDailyCosts(
     timeResult.itinerary,
     plannedBudgetDays,
-    costProfile.dailyFoodCost,
-    costProfile.nightlyAccommodationCost,
+    dailyFoodCost,
+    nightlyAccommodationCost,
   );
   const totalTravelCost = sumDailyField(dailyCosts, 'travelCost');
   const totalActivityCost = sumDailyField(dailyCosts, 'activityCost');
-  const totalFoodCost = costProfile.dailyFoodCost * plannedBudgetDays;
-  const totalAccommodationCost =
-    costProfile.nightlyAccommodationCost * accommodationNights;
+  const totalFoodCost = dailyFoodCost * plannedBudgetDays;
+  const totalAccommodationCost = nightlyAccommodationCost * accommodationNights;
   const spendableBudget = input.totalBudget - input.minEmergencyReserve;
   const allocation = allocateBudgetSequentially(dailyCosts, spendableBudget);
   const failureReasons = buildBudgetFailureReasons(
@@ -70,10 +81,12 @@ export function calculateBudgetFeasibility(
     budgetBreakdown: {
       travelStyle: input.travelStyle,
       transportationStyle: input.transportationStyle,
+      province: input.province,
+      provinceCostMultiplier,
       plannedBudgetDays,
       accommodationNights,
-      dailyFoodCost: costProfile.dailyFoodCost,
-      nightlyAccommodationCost: costProfile.nightlyAccommodationCost,
+      dailyFoodCost,
+      nightlyAccommodationCost,
       totalTravelCost,
       totalActivityCost,
       totalFoodCost,

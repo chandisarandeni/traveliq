@@ -1,5 +1,5 @@
 import { BudgetDay } from './budget-day.interface';
-import { TravelStyle, TransportationStyle } from './travel-style.interface';
+import { Province, TravelStyle, TransportationStyle } from './travel-style.interface';
 
 export interface BudgetBreakdown {
   // Tourist-selected travel style used for living-cost estimates.
@@ -7,6 +7,12 @@ export interface BudgetBreakdown {
 
   // Tourist-selected transport style, retained for explanation and later costing rules.
   transportationStyle: TransportationStyle;
+
+  // Destination province used to adjust food and accommodation rates, when given.
+  province?: Province;
+
+  // Multiplier applied to dailyFoodCost and nightlyAccommodationCost for the province. 1 when no province is given.
+  provinceCostMultiplier: number;
 
   // Number of trip days used for food and accommodation estimates.
   plannedBudgetDays: number;

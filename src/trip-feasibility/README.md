@@ -31,6 +31,7 @@ This endpoint receives the same itinerary fields plus:
 - `minEmergencyReserve`: amount that must remain unused.
 - `travelStyle`: `budget`, `balanced`, or `comfort`.
 - `transportationStyle`: `private transport` or `public transport`.
+- `province` (optional): adjusts food and accommodation rates for the destination's pricing level.
 
 ## Scheduling Flow
 
@@ -86,6 +87,21 @@ Current LKR estimates:
 - `comfort`: 6,000 food per day, 18,000 accommodation per night.
 
 Accommodation is estimated as `plannedBudgetDays - 1` nights. If the itinerary uses fewer days than the tourist requested, budget is calculated for the full requested duration. If the itinerary requires more days than requested, budget is calculated for the minimum required duration.
+
+### Province Price Adjustment
+
+Tourism prices vary by region, so an optional `province` field scales `dailyFoodCost` and `nightlyAccommodationCost` before the rest of the calculation runs. Provinces are grouped by comparable pricing level rather than listed individually, since neighbouring provinces tend to price similarly:
+
+| Province group | Multiplier | Example destinations |
+| --- | ---: | --- |
+| `western` | 1.15 | Colombo, Negombo |
+| `southern` | 1.12 | Galle, Mirissa, Yala |
+| `central` | 1.05 | Kandy, Nuwara Eliya |
+| `uva-eastern` | 0.95 | Ella, Trincomalee |
+| `north-central` | 0.92 | Sigiriya, Polonnaruwa |
+| `north-western-sabaragamuwa` | 0.90 | Kurunegala, Ratnapura |
+
+When `province` is omitted, the multiplier is `1` and rates are unchanged. `provinceCostMultiplier` and the adjusted `dailyFoodCost`/`nightlyAccommodationCost` are returned in `budgetBreakdown` so the adjustment is visible, not just applied silently.
 
 ## Data Structures
 

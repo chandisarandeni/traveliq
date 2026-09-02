@@ -28,3 +28,23 @@ export const TRAVEL_STYLE_COST_PROFILE = {
     nightlyAccommodationCost: 18000,
   },
 } as const;
+
+// Optional destination province, grouped by comparable tourism pricing level.
+export const PROVINCES = [
+  'western',
+  'southern',
+  'central',
+  'uva-eastern',
+  'north-central',
+  'north-western-sabaragamuwa',
+] as const;
+
+// Multiplier applied to dailyFoodCost and nightlyAccommodationCost when a province is given.
+export const PROVINCE_COST_MULTIPLIER = {
+  western: 1.15,
+  southern: 1.12,
+  central: 1.05,
+  'uva-eastern': 0.95,
+  'north-central': 0.92,
+  'north-western-sabaragamuwa': 0.9,
+} as const;

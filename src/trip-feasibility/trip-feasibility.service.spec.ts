@@ -517,6 +517,46 @@ describe('TripFeasibilityService', () => {
       ),
     ).toThrow('transportationStyle must be one of');
   });
+
+  // Without a province, rates are unadjusted.
+  it('applies no adjustment when province is not given', () => {
+    const result = service.calculateFeasibility(buildFeasibilityRequest());
+
+    expect(result.budget.budgetBreakdown.provinceCostMultiplier).toBe(1);
+    expect(result.budget.budgetBreakdown.dailyFoodCost).toBe(3500);
+    expect(result.budget.budgetBreakdown.nightlyAccommodationCost).toBe(9000);
+  });
+
+  // A pricier province raises the daily food and accommodation rates.
+  it('raises rates for a higher-cost province', () => {
+    const result = service.calculateFeasibility(
+      buildFeasibilityRequest({ province: 'western' }),
+    );
+
+    expect(result.budget.budgetBreakdown.provinceCostMultiplier).toBe(1.15);
+    expect(result.budget.budgetBreakdown.dailyFoodCost).toBe(4025);
+    expect(result.budget.budgetBreakdown.nightlyAccommodationCost).toBe(10350);
+  });
+
+  // A cheaper province lowers the daily food and accommodation rates.
+  it('lowers rates for a lower-cost province', () => {
+    const result = service.calculateFeasibility(
+      buildFeasibilityRequest({ province: 'north-western-sabaragamuwa' }),
+    );
+
+    expect(result.budget.budgetBreakdown.provinceCostMultiplier).toBe(0.9);
+    expect(result.budget.budgetBreakdown.dailyFoodCost).toBe(3150);
+    expect(result.budget.budgetBreakdown.nightlyAccommodationCost).toBe(8100);
+  });
+
+  // Province must match a configured pricing group.
+  it('rejects invalid province', () => {
+    expect(() =>
+      service.calculateFeasibility(
+        buildFeasibilityRequest({ province: 'colombo' }),
+      ),
+    ).toThrow('province must be one of');
+  });
 });
 
 // Builds the default request used by most tests; individual cases override only what matters.
