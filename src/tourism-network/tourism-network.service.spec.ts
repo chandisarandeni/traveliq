@@ -43,16 +43,18 @@ describe('TourismNetworkService', () => {
         nodes,
         nodeIndexMap: new Map(),
         adjacencyMatrix: [],
-        connections: [
-          {
-            fromNodeId: 'START',
-            toNodeId: 'A01',
-            distanceKm: 1,
-            travelTimeMinutes: 5,
-            travelTimeHours: 0.08,
-            travelCost: 120,
-          },
-        ],
+        connections: nodes.flatMap((fromNode, fromIndex) =>
+          nodes
+            .filter((toNode) => toNode.id !== fromNode.id)
+            .map((toNode, toIndex) => ({
+              fromNodeId: fromNode.id,
+              toNodeId: toNode.id,
+              distanceKm: fromIndex + toIndex + 1,
+              travelTimeMinutes: (fromIndex + toIndex + 1) * 10,
+              travelTimeHours: fromIndex + toIndex + 1,
+              travelCost: (fromIndex + toIndex + 1) * 120,
+            })),
+        ),
       })),
     };
 
@@ -103,7 +105,7 @@ describe('TourismNetworkService', () => {
     expect(service).toBeDefined();
   });
 
-  it('generates one network from the selected top-ranked Task 4 candidate plan', async () => {
+  it('generates route optimization matrices from every Task 4 candidate plan', async () => {
     const result = await service.create({
       destinationCount: 4,
       preferredTransportation: TransportationMode.PRIVATE,
@@ -174,13 +176,47 @@ describe('TourismNetworkService', () => {
         {
           planId: 'PLAN-002',
           rank: 2,
-          selectedAttractions: ['...'],
+          selectedAttractions: [
+            {
+              attraction: {
+                id: 'A03',
+                name: 'Temple of the Tooth',
+                categories: ['RELIGIOUS', 'CULTURE'],
+                latitude: 7.2936,
+                longitude: 80.6413,
+              },
+              interestScore: 3,
+              normalizedScore: 3,
+            },
+          ],
         },
       ],
     });
 
-    expect(result.candidatePlanId).toBe('PLAN-001');
-    expect(result.networkId).toEqual(expect.stringMatching(/^NET/));
+    expect(result).toEqual(
+      expect.objectContaining({
+        networkId: expect.stringMatching(/^MATRIX/),
+        plans: expect.arrayContaining([
+          expect.objectContaining({
+            planId: 'PLAN-001',
+            startLocation: 'Kandy Railway Station',
+            endLocation: 'Kandy City Centre',
+            locations: expect.arrayContaining(['Kandy Railway Station', 'Sigiriya Rock Fortress', 'Kandy City Centre']),
+            distanceMatrix: expect.any(Array),
+            timeMatrix: expect.any(Array),
+            costMatrix: expect.any(Array),
+            weights: {
+              costWeight: 0.5,
+              timeWeight: 0.3,
+              distanceWeight: 0.2,
+            },
+          }),
+          expect.objectContaining({
+            planId: 'PLAN-002',
+          }),
+        ]),
+      }),
+    );
     expect(graphService.prepareUniqueNodes).toHaveBeenCalledWith(
       expect.objectContaining({
         candidatePlanId: 'PLAN-001',
@@ -194,6 +230,25 @@ describe('TourismNetworkService', () => {
         ]),
       }),
     );
-    expect(tourismNetworkModel.create).toHaveBeenCalledTimes(1);
+    expect(tourismNetworkModel.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        networkId: expect.stringMatching(/^MATRIX/),
+        candidatePlanId: 'ROUTE_OPTIMIZATION_PLANS',
+        preferredTransportation: TransportationMode.PRIVATE,
+        nodes: [],
+        connections: [],
+        routeOptimizationPlans: expect.arrayContaining([
+          expect.objectContaining({
+            planId: 'PLAN-001',
+            distanceMatrix: expect.any(Array),
+            timeMatrix: expect.any(Array),
+            costMatrix: expect.any(Array),
+          }),
+          expect.objectContaining({
+            planId: 'PLAN-002',
+          }),
+        ]),
+      }),
+    );
   });
 });
