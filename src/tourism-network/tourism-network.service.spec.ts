@@ -233,10 +233,6 @@ describe('TourismNetworkService', () => {
     expect(tourismNetworkModel.create).toHaveBeenCalledWith(
       expect.objectContaining({
         networkId: expect.stringMatching(/^MATRIX/),
-        candidatePlanId: 'ROUTE_OPTIMIZATION_PLANS',
-        preferredTransportation: TransportationMode.PRIVATE,
-        nodes: [],
-        connections: [],
         routeOptimizationPlans: expect.arrayContaining([
           expect.objectContaining({
             planId: 'PLAN-001',
@@ -248,6 +244,18 @@ describe('TourismNetworkService', () => {
             planId: 'PLAN-002',
           }),
         ]),
+      }),
+    );
+    expect(tourismNetworkModel.create).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        candidatePlanId: expect.anything(),
+        preferredTransportation: expect.anything(),
+        nodes: expect.anything(),
+        connections: expect.anything(),
+        connected: expect.anything(),
+        totalNodes: expect.anything(),
+        reachableNodes: expect.anything(),
+        unreachableNodes: expect.anything(),
       }),
     );
   });

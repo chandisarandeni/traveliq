@@ -91,7 +91,7 @@ export class TourismNetworkService {
       throw new BadRequestException('No candidate plan contained usable selected attractions');
     }
 
-    return this.saveRouteOptimizationPlans(createTourismNetworkDto, plans);
+    return this.saveRouteOptimizationPlans(plans);
   }
 
   private normalizeCandidatePlanRequest(
@@ -135,23 +135,12 @@ export class TourismNetworkService {
     };
   }
 
-  private async saveRouteOptimizationPlans(
-    createTourismNetworkDto: CreateTourismNetworkDto,
-    plans: RouteOptimizationPlan[],
-  ): Promise<RouteOptimizationPlansResponse> {
+  private async saveRouteOptimizationPlans(plans: RouteOptimizationPlan[]): Promise<RouteOptimizationPlansResponse> {
     // ============= Matrix Persistence =============
     // Store the generated Module 1 payload exactly so later debugging can compare API output with DB data.
     const networkId = this.generateMatrixNetworkId();
     const createdNetwork = await this.tourismNetworkModel.create({
       networkId,
-      candidatePlanId: 'ROUTE_OPTIMIZATION_PLANS',
-      preferredTransportation: createTourismNetworkDto.preferredTransportation,
-      nodes: [],
-      connections: [],
-      connected: true,
-      totalNodes: 0,
-      reachableNodes: 0,
-      unreachableNodes: [],
       routeOptimizationPlans: plans,
     });
 

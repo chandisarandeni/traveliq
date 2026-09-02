@@ -6,12 +6,12 @@ import { TransportationMode } from '../enums/transportation-mode.enum';
 export class EstimateConnectionDto {
   @ValidateNested()
   @Type(() => NetworkLocationDto)
-  from: NetworkLocationDto;
+  from!: NetworkLocationDto;
 
   @ValidateNested()
   @Type(() => NetworkLocationDto)
-  to: NetworkLocationDto;
+  to!: NetworkLocationDto;
 
   @IsEnum(TransportationMode)
-  preferredTransportation: TransportationMode;
+  preferredTransportation!: TransportationMode;
 }
