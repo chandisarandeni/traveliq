@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const databaseConnection = app.get<Connection>(getConnectionToken());
-  const port = configService.get<string>('PORT') ?? '3005';
+  const port = configService.get('PORT') ?? '3005';
 
   await app.listen(port);
 
