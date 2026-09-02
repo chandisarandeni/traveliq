@@ -11,7 +11,7 @@ async function bootstrap() {
   const databaseConnection = app.get<Connection>(getConnectionToken());
   const port = configService.get('PORT') ?? '3005';
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   // ============= Application Startup =============
   const bootstrapLogger = new Logger('Bootstrap');
