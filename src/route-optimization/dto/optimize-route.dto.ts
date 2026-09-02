@@ -44,8 +44,19 @@ export class OptimizeSinglePlanDto {
 }
 
 export class OptimizePlansDto {
+  @IsOptional()
+  @IsString()
+  networkId?: string;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OptimizeSinglePlanDto)
-  plans: OptimizeSinglePlanDto[];
+  plans?: OptimizeSinglePlanDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OptimizeSinglePlanDto)
+  routeOptimizationPlans?: OptimizeSinglePlanDto[];
 }
