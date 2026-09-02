@@ -6,6 +6,7 @@ import {
 
 @Injectable()
 export class NormalizationService {
+  private static readonly MAX_MATRIX_SIZE = 500;
   /**
    * Computes the min and max bounds for distance, time, and cost matrices.
    * Considers off-diagonal (u != v) elements to determine realistic ranges,
@@ -16,7 +17,12 @@ export class NormalizationService {
     timeMatrix: number[][],
     costMatrix: number[][],
   ): MatrixBounds {
-    const n = distanceMatrix.length;
+    const n = Math.min(
+      distanceMatrix.length,
+      timeMatrix.length,
+      costMatrix.length,
+      NormalizationService.MAX_MATRIX_SIZE,
+    );
     let minDistance = Infinity;
     let maxDistance = -Infinity;
     let minTime = Infinity;
