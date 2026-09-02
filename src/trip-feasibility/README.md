@@ -90,16 +90,19 @@ Accommodation is estimated as `plannedBudgetDays - 1` nights. If the itinerary u
 
 ### Province Price Adjustment
 
-Tourism prices vary by region, so an optional `province` field scales `dailyFoodCost` and `nightlyAccommodationCost` before the rest of the calculation runs. Provinces are grouped by comparable pricing level rather than listed individually, since neighbouring provinces tend to price similarly:
+Tourism prices vary by region, so an optional `province` field scales `dailyFoodCost` and `nightlyAccommodationCost` before the rest of the calculation runs. Each of Sri Lanka's nine provinces has its own multiplier; provinces with comparable tourism pricing share the same value:
 
-| Province group | Multiplier | Example destinations |
+| Province | Multiplier | Example destinations |
 | --- | ---: | --- |
-| `western` | 1.15 | Colombo, Negombo |
-| `southern` | 1.12 | Galle, Mirissa, Yala |
-| `central` | 1.05 | Kandy, Nuwara Eliya |
-| `uva-eastern` | 0.95 | Ella, Trincomalee |
-| `north-central` | 0.92 | Sigiriya, Polonnaruwa |
-| `north-western-sabaragamuwa` | 0.90 | Kurunegala, Ratnapura |
+| `Western` | 1.15 | Colombo, Negombo |
+| `Southern` | 1.12 | Galle, Mirissa, Yala |
+| `Central` | 1.05 | Kandy, Nuwara Eliya |
+| `Eastern` | 0.95 | Trincomalee, Batticaloa |
+| `Uva` | 0.95 | Ella, Badulla |
+| `Northern` | 0.92 | Jaffna, Mannar |
+| `North Central` | 0.92 | Sigiriya, Polonnaruwa |
+| `North Western` | 0.90 | Kurunegala, Puttalam |
+| `Sabaragamuwa` | 0.90 | Ratnapura, Kegalle |
 
 When `province` is omitted, the multiplier is `1` and rates are unchanged. `provinceCostMultiplier` and the adjusted `dailyFoodCost`/`nightlyAccommodationCost` are returned in `budgetBreakdown` so the adjustment is visible, not just applied silently.
 

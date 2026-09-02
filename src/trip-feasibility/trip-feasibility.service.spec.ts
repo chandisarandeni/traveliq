@@ -530,7 +530,7 @@ describe('TripFeasibilityService', () => {
   // A pricier province raises the daily food and accommodation rates.
   it('raises rates for a higher-cost province', () => {
     const result = service.calculateFeasibility(
-      buildFeasibilityRequest({ province: 'western' }),
+      buildFeasibilityRequest({ province: 'Western' }),
     );
 
     expect(result.budget.budgetBreakdown.provinceCostMultiplier).toBe(1.15);
@@ -541,7 +541,7 @@ describe('TripFeasibilityService', () => {
   // A cheaper province lowers the daily food and accommodation rates.
   it('lowers rates for a lower-cost province', () => {
     const result = service.calculateFeasibility(
-      buildFeasibilityRequest({ province: 'north-western-sabaragamuwa' }),
+      buildFeasibilityRequest({ province: 'North Western' }),
     );
 
     expect(result.budget.budgetBreakdown.provinceCostMultiplier).toBe(0.9);
