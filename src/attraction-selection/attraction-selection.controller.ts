@@ -58,7 +58,7 @@ export class AttractionSelectionController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.attractionSelectionService.findOne(+id);
+    return this.attractionSelectionService.findOne(id);
   }
 
   @Patch(':id')
@@ -67,13 +67,13 @@ export class AttractionSelectionController {
     @Body() updateAttractionSelectionDto: UpdateAttractionSelectionDto,
   ) {
     return this.attractionSelectionService.update(
-      +id,
+      id,
       updateAttractionSelectionDto,
     );
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.attractionSelectionService.remove(+id);
+    return this.attractionSelectionService.remove(id);
   }
 }
