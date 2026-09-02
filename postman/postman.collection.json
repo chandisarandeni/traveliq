@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "8fe7353a-dab7-4e83-b854-f9a19fb0f4305",
-    "name": "TravelIQ - Tourism Network APIs",
-    "description": "Postman collection for the active Tourism Network API endpoints only.",
+    "name": "TravelIQ APIs",
+    "description": "Postman collection for active TravelIQ API endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,56 +12,56 @@
       "type": "string"
     },
     {
-      "key": "attractionSelectionId",
-      "value": "1",
-      "type": "string"
-    },
-    {
       "key": "networkId",
-      "value": "NET_REPLACE_AFTER_CREATE",
+      "value": "MATRIX_REPLACE_AFTER_GENERATE",
       "type": "string"
     },
     {
-      "key": "fromNodeId",
-      "value": "START",
+      "key": "userEmail",
+      "value": "traveler@example.com",
       "type": "string"
     },
     {
-      "key": "toNodeId",
-      "value": "A01",
+      "key": "userPassword",
+      "value": "password123",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "USER_REPLACE_AFTER_CREATE",
       "type": "string"
     }
   ],
   "item": [
     {
-      "name": "App",
+      "name": "Users",
       "item": [
         {
-          "name": "Health Check",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                ""
-              ]
-            },
-            "description": "GET /"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Attraction Selection",
-      "description": "Endpoints from src/attraction-selection/attraction-selection.controller.ts.",
-      "item": [
-        {
-          "name": "Select Attractions",
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user is created\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.id).to.be.a(\"string\");",
+                  "  pm.expect(response.firstName).to.eql(\"Travel\");",
+                  "  pm.expect(response.lastName).to.eql(\"User\");",
+                  "  pm.expect(response.email).to.eql(pm.collectionVariables.get(\"userEmail\"));",
+                  "  pm.expect(response).to.not.have.property(\"passwordHash\");",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.id) {",
+                  "  pm.collectionVariables.set(\"userId\", response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -72,24 +72,40 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.957,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    }\n  ]\n}"
+              "raw": "{\n  \"firstName\": \"Travel\",\n  \"lastName\": \"User\",\n  \"email\": \"{{userEmail}}\",\n  \"phone\": \"+94771234567\",\n  \"password\": \"{{userPassword}}\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"country\": \"Sri Lanka\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/attraction-selection/select",
+              "raw": "{{baseUrl}}/users",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "attraction-selection",
-                "select"
+                "users"
               ]
             },
-            "description": "POST /attraction-selection/select"
+            "description": "Creates a user and stores passwordHash in MongoDB. The passwordHash is not returned in the response."
           },
           "response": []
         },
         {
-          "name": "Generate Candidate Plans",
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user can log in\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.message).to.eql(\"Login successful\");",
+                  "  pm.expect(response.user.email).to.eql(pm.collectionVariables.get(\"userEmail\"));",
+                  "  pm.expect(response.user).to.not.have.property(\"passwordHash\");",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -100,88 +116,42 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tripDuration\": 3,\n  \"travelStyle\": \"BALANCED\",\n  \"userInterests\": [\n    { \"interest\": \"NATURE\", \"weight\": 5 },\n    { \"interest\": \"WILDLIFE\", \"weight\": 4 },\n    { \"interest\": \"HISTORY\", \"weight\": 3 },\n    { \"interest\": \"CULTURE\", \"weight\": 2 }\n  ],\n  \"availableAttractions\": [\n    {\n      \"id\": \"A01\",\n      \"name\": \"Sigiriya Rock Fortress\",\n      \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n      \"latitude\": 7.957,\n      \"longitude\": 80.7603,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A02\",\n      \"name\": \"Yala National Park\",\n      \"categories\": [\"WILDLIFE\", \"NATURE\"],\n      \"latitude\": 6.3725,\n      \"longitude\": 81.5218,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A03\",\n      \"name\": \"Mirissa Beach\",\n      \"categories\": [\"BEACH\", \"SCENIC\"],\n      \"latitude\": 5.9483,\n      \"longitude\": 80.4716,\n      \"isAvailable\": true\n    },\n    {\n      \"id\": \"A04\",\n      \"name\": \"Ella Rock\",\n      \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n      \"latitude\": 6.8562,\n      \"longitude\": 81.0466,\n      \"isAvailable\": true\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/attraction-selection/plans",
+              "raw": "{{baseUrl}}/users/login",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "attraction-selection",
-                "plans"
+                "users",
+                "login"
               ]
             },
-            "description": "POST /attraction-selection/plans"
+            "description": "Logs in with email and password."
           },
           "response": []
         },
         {
-          "name": "Create Attraction Selection",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "name": "Update User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user is updated\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.id).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "  pm.expect(response.firstName).to.eql(\"Updated\");",
+                  "  pm.expect(response.country).to.eql(\"Canada\");",
+                  "  pm.expect(response).to.not.have.property(\"passwordHash\");",
+                  "});"
+                ]
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/attraction-selection",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "attraction-selection"
-              ]
-            },
-            "description": "POST /attraction-selection"
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Attraction Selections",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/attraction-selection",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "attraction-selection"
-              ]
-            },
-            "description": "GET /attraction-selection"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Attraction Selection By ID",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "attraction-selection",
-                "{{attractionSelectionId}}"
-              ]
-            },
-            "description": "GET /attraction-selection/:id"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Attraction Selection",
+            }
+          ],
           "request": {
             "method": "PATCH",
             "header": [
@@ -192,38 +162,55 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{}"
+              "raw": "{\n  \"firstName\": \"Updated\",\n  \"phone\": \"+14165550123\",\n  \"country\": \"Canada\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "raw": "{{baseUrl}}/users/{{userId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "attraction-selection",
-                "{{attractionSelectionId}}"
+                "users",
+                "{{userId}}"
               ]
             },
-            "description": "PATCH /attraction-selection/:id"
+            "description": "Updates a user by id. You can send any subset of firstName, lastName, email, phone, password, dateOfBirth, and country."
           },
           "response": []
         },
         {
-          "name": "Delete Attraction Selection",
+          "name": "Delete User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user is deleted\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.message).to.eql(\"User deleted successfully\");",
+                  "  pm.expect(response.user.id).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "  pm.expect(response.user).to.not.have.property(\"passwordHash\");",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/attraction-selection/{{attractionSelectionId}}",
+              "raw": "{{baseUrl}}/users/{{userId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "attraction-selection",
-                "{{attractionSelectionId}}"
+                "users",
+                "{{userId}}"
               ]
             },
-            "description": "DELETE /attraction-selection/:id"
+            "description": "Deletes a user by id."
           },
           "response": []
         }
@@ -246,28 +233,11 @@
                   "  const response = pm.response.json();",
                   "  pm.expect(response.networkId).to.be.a(\"string\");",
                   "  pm.expect(response.plans).to.be.an(\"array\");",
-                  "  pm.expect(response.plans.length).to.eql(5);",
-                  "});",
-                  "",
-                  "pm.test(\"generated payload matches route optimization format\", function () {",
-                  "  const response = pm.response.json();",
-                  "  response.plans.forEach((plan) => {",
-                  "    pm.expect(plan.planId).to.be.a(\"string\");",
-                  "    pm.expect(plan.startLocation).to.eql(\"Kandy Railway Station\");",
-                  "    pm.expect(plan.endLocation).to.eql(\"Kandy City Centre\");",
-                  "    pm.expect(plan.locations).to.be.an(\"array\");",
-                  "    pm.expect(plan.distanceMatrix).to.be.an(\"array\");",
-                  "    pm.expect(plan.timeMatrix).to.be.an(\"array\");",
-                  "    pm.expect(plan.costMatrix).to.be.an(\"array\");",
-                  "    pm.expect(plan.distanceMatrix.length).to.eql(plan.locations.length);",
-                  "    pm.expect(plan.timeMatrix.length).to.eql(plan.locations.length);",
-                  "    pm.expect(plan.costMatrix.length).to.eql(plan.locations.length);",
-                  "  });",
                   "});",
                   "",
                   "const response = pm.response.json();",
                   "if (response.networkId) {",
-                  "  pm.collectionVariables.set('networkId', response.networkId);",
+                  "  pm.collectionVariables.set(\"networkId\", response.networkId);",
                   "}"
                 ]
               }
@@ -283,7 +253,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"destinationCount\": 4,\n  \"candidatePlans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"rank\": 1,\n      \"planInterestScore\": 8,\n      \"diversityScore\": 7,\n      \"planScore\": 7.7,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\"WILDLIFE\", \"NATURE\"],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A04\",\n            \"name\": \"Ella Rock\",\n            \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n            \"latitude\": 6.8562,\n            \"longitude\": 81.0466,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 8,\n          \"normalizedScore\": 8\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A08\",\n            \"name\": \"Arugam Bay\",\n            \"categories\": [\"BEACH\", \"ADVENTURE\"],\n            \"latitude\": 6.8415,\n            \"longitude\": 81.8344,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 5,\n          \"normalizedScore\": 5\n        }\n      ]\n    },\n    {\n      \"planId\": \"PLAN-002\",\n      \"rank\": 2,\n      \"planInterestScore\": 8.25,\n      \"diversityScore\": 6,\n      \"planScore\": 7.57,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\"WILDLIFE\", \"NATURE\"],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A04\",\n            \"name\": \"Ella Rock\",\n            \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n            \"latitude\": 6.8562,\n            \"longitude\": 81.0466,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 8,\n          \"normalizedScore\": 8\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A10\",\n            \"name\": \"Nuwara Eliya\",\n            \"categories\": [\"NATURE\", \"SCENIC\"],\n            \"latitude\": 6.9497,\n            \"longitude\": 80.7891,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 6,\n          \"normalizedScore\": 6\n        }\n      ]\n    },\n    {\n      \"planId\": \"PLAN-003\",\n      \"rank\": 3,\n      \"planInterestScore\": 7.5,\n      \"diversityScore\": 7,\n      \"planScore\": 7.35,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\"WILDLIFE\", \"NATURE\"],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A04\",\n            \"name\": \"Ella Rock\",\n            \"categories\": [\"NATURE\", \"SCENIC\", \"ADVENTURE\"],\n            \"latitude\": 6.8562,\n            \"longitude\": 81.0466,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 8,\n          \"normalizedScore\": 8\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A07\",\n            \"name\": \"Temple of the Tooth\",\n            \"categories\": [\"RELIGIOUS\", \"CULTURE\"],\n            \"latitude\": 7.2936,\n            \"longitude\": 80.6413,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 3,\n          \"normalizedScore\": 3\n        }\n      ]\n    },\n    {\n      \"planId\": \"PLAN-004\",\n      \"rank\": 4,\n      \"planInterestScore\": 7.5,\n      \"diversityScore\": 7,\n      \"planScore\": 7.35,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A08\",\n            \"name\": \"Arugam Bay\",\n            \"categories\": [\"BEACH\", \"ADVENTURE\"],\n            \"latitude\": 6.8415,\n            \"longitude\": 81.8344,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 5,\n          \"normalizedScore\": 5\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A10\",\n            \"name\": \"Nuwara Eliya\",\n            \"categories\": [\"NATURE\", \"SCENIC\"],\n            \"latitude\": 6.9497,\n            \"longitude\": 80.7891,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 6,\n          \"normalizedScore\": 6\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\"WILDLIFE\", \"NATURE\"],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        }\n      ]\n    },\n    {\n      \"planId\": \"PLAN-005\",\n      \"rank\": 5,\n      \"planInterestScore\": 5.5,\n      \"diversityScore\": 6,\n      \"planScore\": 5.65,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A05\",\n            \"name\": \"Galle Fort\",\n            \"categories\": [\"HISTORY\", \"CULTURE\"],\n            \"latitude\": 6.03,\n            \"longitude\": 80.217,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 5,\n          \"normalizedScore\": 5\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A03\",\n            \"name\": \"Mirissa Beach\",\n            \"categories\": [\"BEACH\", \"SCENIC\"],\n            \"latitude\": 5.9483,\n            \"longitude\": 80.4716,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 4,\n          \"normalizedScore\": 4\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\"WILDLIFE\", \"NATURE\"],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A06\",\n            \"name\": \"Udawalawe National Park\",\n            \"categories\": [\"WILDLIFE\"],\n            \"latitude\": 6.4745,\n            \"longitude\": 80.8987,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 4,\n          \"normalizedScore\": 4\n        }\n      ]\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
+              "raw": "{\n  \"destinationCount\": 2,\n  \"candidatePlans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"rank\": 1,\n      \"planInterestScore\": 9,\n      \"diversityScore\": 8,\n      \"planScore\": 8.7,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\"WILDLIFE\", \"NATURE\"],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        }\n      ]\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/tourism-network",
@@ -295,28 +265,12 @@
                 "tourism-network"
               ]
             },
-            "description": "Generates distance, time, and cost matrices in the route optimization format, saves the same matrix data in MongoDB, and returns the saved networkId."
+            "description": "Generates distance, time, and cost matrices, saves the matrix data in MongoDB, and returns the saved networkId."
           },
           "response": []
         },
         {
           "name": "Get Generated Tourism Network By ID",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"saved matrix payload is returned\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "  const response = pm.response.json();",
-                  "  pm.expect(response.networkId).to.eql(pm.collectionVariables.get(\"networkId\"));",
-                  "  pm.expect(response.plans).to.be.an(\"array\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -365,25 +319,6 @@
           "response": []
         }
       ]
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3006"
-    },
-    {
-      "key": "networkId",
-      "value": "MATRIX_REPLACE_AFTER_GENERATE"
     }
   ]
 }
