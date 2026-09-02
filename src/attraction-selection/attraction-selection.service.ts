@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { TravelStyle } from './enums/travel-style.enum';
 import { InterestCategory } from './enums/interest-category.enum';
 import {
@@ -21,9 +23,19 @@ import { filterAttractions } from './algorithms/attraction-filter.algorithm';
 import { AttractionMaxHeap } from './data-structures/attraction-max-heap';
 import { generateCandidatePlans as runPlanGeneration } from './algorithms/plan-generator.algorithm';
 import { rankPlans } from './algorithms/plan-ranking.algorithm';
+import {
+  AttractionSelection,
+  AttractionSelectionDocument,
+} from './schemas/attraction-selection.schema';
 
 @Injectable()
 export class AttractionSelectionService {
+  constructor(
+    @Optional()
+    @InjectModel(AttractionSelection.name)
+    private readonly attractionSelectionModel?: Model<AttractionSelectionDocument>,
+  ) {}
+
   /**
    * 1. Destination Count Algorithm
    * Determines the recommended number of destinations based on trip duration and travel style.
@@ -231,27 +243,87 @@ export class AttractionSelectionService {
       result.endingLocation = endingLocation;
     }
 
+    // Step 8: Persist to database if Mongoose model is available
+    if (this.attractionSelectionModel) {
+      const selectionId = `SEL${Date.now()}`;
+      this.attractionSelectionModel
+        .create({
+          selectionId,
+          tripDuration,
+          travelStyle,
+          destinationCount,
+          userInterests: userInterests?.map((i) => ({
+            interest: i.interest,
+            weight: i.weight,
+          })),
+          candidatePlans,
+          preferredTransportation,
+          startingLocation,
+          endingLocation,
+        })
+        .catch(() => {
+          // Non-blocking: background persistence errors do not affect API response
+        });
+    }
+
     return result;
   }
 
-  // Preserve boilerplate endpoints for controller compatibility if needed
-  create(dto: any) {
+  // Database CRUD methods for AttractionSelection
+  async create(dto: any) {
+    if (this.attractionSelectionModel) {
+      const selectionId = dto.selectionId || `SEL${Date.now()}`;
+      return this.attractionSelectionModel.create({
+        selectionId,
+        ...dto,
+      });
+    }
     return 'This action adds a new attractionSelection';
   }
 
-  findAll() {
+  async findAll() {
+    if (this.attractionSelectionModel) {
+      return this.attractionSelectionModel.find().sort({ createdAt: -1 }).exec();
+    }
     return `This action returns all attractionSelection`;
   }
 
-  findOne(id: number) {
+  async findOne(id: string | number) {
+    if (this.attractionSelectionModel) {
+      const idStr = String(id);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idStr);
+      const query = isObjectId
+        ? { $or: [{ selectionId: idStr }, { _id: idStr }] }
+        : { selectionId: idStr };
+      return this.attractionSelectionModel.findOne(query).exec();
+    }
     return `This action returns a #${id} attractionSelection`;
   }
 
-  update(id: number, dto: any) {
+  async update(id: string | number, dto: any) {
+    if (this.attractionSelectionModel) {
+      const idStr = String(id);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idStr);
+      const query = isObjectId
+        ? { $or: [{ selectionId: idStr }, { _id: idStr }] }
+        : { selectionId: idStr };
+      return this.attractionSelectionModel
+        .findOneAndUpdate(query, dto, { new: true })
+        .exec();
+    }
     return `This action updates a #${id} attractionSelection`;
   }
 
-  remove(id: number) {
+  async remove(id: string | number) {
+    if (this.attractionSelectionModel) {
+      const idStr = String(id);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idStr);
+      const query = isObjectId
+        ? { $or: [{ selectionId: idStr }, { _id: idStr }] }
+        : { selectionId: idStr };
+      return this.attractionSelectionModel.findOneAndDelete(query).exec();
+    }
     return `This action removes a #${id} attractionSelection`;
   }
 }
+
