@@ -13,12 +13,12 @@ import { CreateTravelPlanRankingDto } from './dto/create-travel-plan-ranking.dto
 
 @Controller('travel-plan-ranking')
 export class TravelPlanRankingController {
-  
-constructor(
-  private readonly travelPlanRankingService: TravelPlanRankingService,
-  private readonly greedyRankingService: GreedyRankingService,
-  private readonly persistenceService: TravelPlanRankingPersistenceService,
-) {}
+  constructor(
+    private readonly travelPlanRankingService: TravelPlanRankingService,
+    private readonly greedyRankingService: GreedyRankingService,
+    private readonly persistenceService: TravelPlanRankingPersistenceService,
+  ) {}
+
   @UsePipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,7 +26,7 @@ constructor(
     }),
   )
   @Post('rank')
-  rankPlans(
+  async rankPlans(
     @Body()
     createTravelPlanRankingDto: CreateTravelPlanRankingDto,
   ) {
@@ -43,6 +43,8 @@ constructor(
     console.log('CANDIDATE PLANS:', candidatePlans);
     console.log('PREFERENCES:', preferences);
 
+    const start = performance.now();
+
     const rankedPlans =
       this.travelPlanRankingService.rankPlans(
         candidatePlans,
@@ -55,63 +57,80 @@ constructor(
         preferences,
       );
 
+    const executionTimeMs =
+      performance.now() - start;
+
+    if (bestPlan) {
+      await this.persistenceService.saveResult({
+        algorithmUsed: 'WEIGHTED_SUM',
+        candidateCount: candidatePlans.length,
+        weights: preferences.weights,
+        bestPlan:
+          bestPlan as unknown as Record<string, unknown>,
+        rankedPlans:
+          rankedPlans as unknown as Record<string, unknown>[],
+        executionTimeMs,
+      });
+    }
+
     return {
+      algorithm: 'WEIGHTED_SUM',
+      executionTimeMs,
       bestPlan,
       rankedPlans,
     };
   }
-@UsePipes(
-  new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }),
-)
-@Post('greedy')
-async greedyRank(
-  @Body()
-  createTravelPlanRankingDto: CreateTravelPlanRankingDto,
-) {
-  const {
-    candidatePlans,
-    preferences,
-  } = createTravelPlanRankingDto;
 
-  const start = performance.now();
-
-  const rankedPlans =
-    this.greedyRankingService.greedyRank(
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  )
+  @Post('greedy')
+  async greedyRank(
+    @Body()
+    createTravelPlanRankingDto: CreateTravelPlanRankingDto,
+  ) {
+    const {
       candidatePlans,
       preferences,
-    );
+    } = createTravelPlanRankingDto;
 
-  const executionTimeMs =
-    performance.now() - start;
+    const start = performance.now();
 
-  const bestPlan =
-    rankedPlans.length > 0
-      ? rankedPlans[0]
-      : null;
+    const rankedPlans =
+      this.greedyRankingService.greedyRank(
+        candidatePlans,
+        preferences,
+      );
 
-  if (bestPlan) {
-    await this.persistenceService.saveResult({
-      algorithmUsed: 'GREEDY_HEURISTIC',
-      candidateCount: candidatePlans.length,
-      weights: preferences.weights,
-      bestPlan:
-        bestPlan as unknown as Record<string, unknown>,
-      rankedPlans:
-        rankedPlans as unknown as Record<string, unknown>[],
+    const executionTimeMs =
+      performance.now() - start;
+
+    const bestPlan =
+      rankedPlans.length > 0
+        ? rankedPlans[0]
+        : null;
+
+    if (bestPlan) {
+      await this.persistenceService.saveResult({
+        algorithmUsed: 'GREEDY_HEURISTIC',
+        candidateCount: candidatePlans.length,
+        weights: preferences.weights,
+        bestPlan:
+          bestPlan as unknown as Record<string, unknown>,
+        rankedPlans:
+          rankedPlans as unknown as Record<string, unknown>[],
+        executionTimeMs,
+      });
+    }
+
+    return {
+      algorithm: 'GREEDY_HEURISTIC',
       executionTimeMs,
-    });
+      bestPlan,
+      rankedPlans,
+    };
   }
-
-  return {
-    algorithm: 'GREEDY_HEURISTIC',
-    executionTimeMs,
-    bestPlan,
-    rankedPlans,
-  };
-}
-
-
 }
