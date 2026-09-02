@@ -1,9 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Optional,
+} from '@nestjs/common';
 import { calculateBudgetFeasibility } from './algorithms/budget-feasibility.algorithm';
 import { scheduleItinerary } from './algorithms/greedy-itinerary.algorithm';
 import {
   FLOAT_COMPARISON_EPSILON,
   PROVINCES,
+  TRIP_FEASIBILITY_MODEL,
   TRANSPORTATION_STYLES,
   TRAVEL_STYLES,
 } from './constants/trip-feasibility.constants';
@@ -22,13 +28,35 @@ import {
 } from './interfaces/travel-style.interface';
 import { TripFeasibilityResult } from './interfaces/trip-feasibility-result.interface';
 
+type TripFeasibilityCalculationType = 'itinerary' | 'feasibility';
+
+interface TripFeasibilityPersistenceModel {
+  create(record: Record<string, unknown>): Promise<unknown>;
+}
+
 @Injectable()
 export class TripFeasibilityService {
+  constructor(
+    @Optional()
+    @Inject(TRIP_FEASIBILITY_MODEL)
+    private readonly tripFeasibilityModel?: TripFeasibilityPersistenceModel,
+  ) {}
+
   // Public service method used by the controller and future module integrations.
   calculateItinerary(dto: CalculateTripItineraryDto): TimeItineraryResult {
     const input = this.validateAndNormalize(dto);
 
     return scheduleItinerary(input);
+  }
+
+  async calculateAndSaveItinerary(
+    dto: CalculateTripItineraryDto,
+  ): Promise<TimeItineraryResult> {
+    const result = this.calculateItinerary(dto);
+
+    await this.saveCalculation('itinerary', dto, result);
+
+    return result;
   }
 
   // Full Module 2 check for the current phase: time scheduling plus budget feasibility.
@@ -45,6 +73,44 @@ export class TripFeasibilityService {
       budget,
       failureReasons: [...time.failureReasons, ...budget.failureReasons],
     };
+  }
+
+  async calculateAndSaveFeasibility(
+    dto: CalculateTripFeasibilityDto,
+  ): Promise<TripFeasibilityResult> {
+    const result = this.calculateFeasibility(dto);
+
+    await this.saveCalculation('feasibility', dto, result);
+
+    return result;
+  }
+
+  private async saveCalculation(
+    calculationType: TripFeasibilityCalculationType,
+    requestSnapshot: CalculateTripItineraryDto | CalculateTripFeasibilityDto,
+    resultSnapshot: TimeItineraryResult | TripFeasibilityResult,
+  ): Promise<void> {
+    if (!this.tripFeasibilityModel) {
+      return;
+    }
+
+    await this.tripFeasibilityModel.create({
+      calculationType,
+      requestSnapshot,
+      resultSnapshot,
+      overallFeasible:
+        'overallFeasible' in resultSnapshot
+          ? resultSnapshot.overallFeasible
+          : undefined,
+      timeFeasible:
+        'time' in resultSnapshot
+          ? resultSnapshot.time.timeFeasible
+          : resultSnapshot.timeFeasible,
+      budgetFeasible:
+        'budget' in resultSnapshot
+          ? resultSnapshot.budget.budgetFeasible
+          : undefined,
+    });
   }
 
   // Keep validation at the NestJS service boundary so the algorithm stays pure.

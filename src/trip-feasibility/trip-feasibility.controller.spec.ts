@@ -26,7 +26,7 @@ describe('TripFeasibilityController', () => {
   });
 
   // Confirms the endpoint delegates request handling to the service.
-  it('posts itinerary requests to the service', () => {
+  it('posts itinerary requests to the service', async () => {
     const dto = {
       tripDuration: 1,
       maxDailyTravelTime: 5,
@@ -57,16 +57,16 @@ describe('TripFeasibilityController', () => {
         totalTravelCost: 200,
       },
     } satisfies CalculateTripItineraryDto;
-    const spy = jest.spyOn(service, 'calculateItinerary');
+    const spy = jest.spyOn(service, 'calculateAndSaveItinerary');
 
-    const result = controller.calculateItinerary(dto);
+    const result = await controller.calculateItinerary(dto);
 
     expect(spy).toHaveBeenCalledWith(dto);
     expect(result.timeFeasible).toBe(true);
   });
 
   // Confirms the full feasibility endpoint also delegates to the service.
-  it('posts full feasibility requests to the service', () => {
+  it('posts full feasibility requests to the service', async () => {
     const dto = {
       ...buildControllerItineraryDto(),
       totalBudget: 200000,
@@ -74,9 +74,9 @@ describe('TripFeasibilityController', () => {
       travelStyle: 'balanced',
       transportationStyle: 'private transport',
     } satisfies CalculateTripFeasibilityDto;
-    const spy = jest.spyOn(service, 'calculateFeasibility');
+    const spy = jest.spyOn(service, 'calculateAndSaveFeasibility');
 
-    const result = controller.calculateFeasibility(dto);
+    const result = await controller.calculateFeasibility(dto);
 
     expect(spy).toHaveBeenCalledWith(dto);
     expect(result.overallFeasible).toBe(true);
