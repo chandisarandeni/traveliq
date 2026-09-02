@@ -392,6 +392,20 @@ describe('TripFeasibilityService', () => {
     expect(result.budget.budgetBreakdown.totalAccommodationCost).toBe(27000);
     expect(result.budget.budgetBreakdown.totalEstimatedCost).toBe(63000);
     expect(result.budget.budgetBreakdown.remainingBalance).toBe(117000);
+    expect(result.budget.budgetBreakdown.affordableDays).toBe(4);
+    expect(result.budget.budgetBreakdown.firstUnaffordableDay).toBeNull();
+    expect(
+      result.budget.budgetBreakdown.dailyBreakdown.map((day) => ({
+        dayNumber: day.dayNumber,
+        cumulativeCost: day.cumulativeCost,
+        affordable: day.affordable,
+      })),
+    ).toEqual([
+      { dayNumber: 1, cumulativeCost: 28500, affordable: true },
+      { dayNumber: 2, cumulativeCost: 47000, affordable: true },
+      { dayNumber: 3, cumulativeCost: 59500, affordable: true },
+      { dayNumber: 4, cumulativeCost: 63000, affordable: true },
+    ]);
   });
 
   // Budget uses requested trip duration when the itinerary needs fewer days.
@@ -433,8 +447,25 @@ describe('TripFeasibilityService', () => {
 
     expect(result.overallFeasible).toBe(false);
     expect(result.budget.budgetFeasible).toBe(false);
+    expect(result.budget.budgetBreakdown.affordableDays).toBe(1);
+    expect(result.budget.budgetBreakdown.firstUnaffordableDay).toBe(2);
+    expect(
+      result.budget.budgetBreakdown.dailyBreakdown.map((day) => ({
+        dayNumber: day.dayNumber,
+        remainingBudgetAfterDay: day.remainingBudgetAfterDay,
+        affordable: day.affordable,
+      })),
+    ).toEqual([
+      { dayNumber: 1, remainingBudgetAfterDay: 11500, affordable: true },
+      { dayNumber: 2, remainingBudgetAfterDay: -7000, affordable: false },
+      { dayNumber: 3, remainingBudgetAfterDay: -19500, affordable: false },
+      { dayNumber: 4, remainingBudgetAfterDay: -23000, affordable: false },
+    ]);
     expect(result.budget.failureReasons[0]).toContain(
       'estimated trip cost is 63000 LKR',
+    );
+    expect(result.budget.failureReasons[0]).toContain(
+      'first shortfall occurs on day 2',
     );
   });
 

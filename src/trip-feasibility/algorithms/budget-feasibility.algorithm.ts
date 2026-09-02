@@ -5,12 +5,32 @@ import { CalculateTripFeasibilityInput } from '../interfaces/calculate-trip-feas
 import { ItineraryDay } from '../interfaces/itinerary-day.interface';
 import { TimeItineraryResult } from '../interfaces/time-itinerary-result.interface';
 
+type BudgetDayCost = Omit<
+  BudgetDay,
+  'cumulativeCost' | 'remainingBudgetAfterDay' | 'affordable'
+>;
+
+interface BudgetAllocationResult {
+  dailyBreakdown: BudgetDay[];
+  totalEstimatedCost: number;
+  remainingBalance: number;
+  affordableDays: number;
+  firstUnaffordableDay: number | null;
+}
+
 /**
  * Budget feasibility for a generated itinerary.
  *
- * The time algorithm decides how many days are needed. This budget algorithm
- * then estimates whether the tourist can afford that trip while keeping the
- * emergency reserve untouched.
+ * Resource allocation algorithm:
+ * - Build a day-cost array from the generated itinerary.
+ * - Protect the emergency reserve before allocation.
+ * - Greedily allocate the remaining spendable budget in chronological day order.
+ * - Track the first day that cannot be fully funded.
+ *
+ * This works because trip days are mandatory and ordered; a later day cannot be
+ * funded meaningfully if an earlier required day is already unaffordable.
+ *
+ * Complexity: O(d) time and O(d) space, where d is plannedBudgetDays.
  */
 export function calculateBudgetFeasibility(
   input: CalculateTripFeasibilityInput,
@@ -19,30 +39,28 @@ export function calculateBudgetFeasibility(
   const costProfile = TRAVEL_STYLE_COST_PROFILE[input.travelStyle];
   const plannedBudgetDays = getPlannedBudgetDays(input, timeResult);
   const accommodationNights = Math.max(plannedBudgetDays - 1, 0);
-  const dailyBreakdown = buildDailyBreakdown(
+  const dailyCosts = buildDailyCosts(
     timeResult.itinerary,
     plannedBudgetDays,
     costProfile.dailyFoodCost,
     costProfile.nightlyAccommodationCost,
   );
-  const totalTravelCost = sumDailyField(dailyBreakdown, 'travelCost');
-  const totalActivityCost = sumDailyField(dailyBreakdown, 'activityCost');
+  const totalTravelCost = sumDailyField(dailyCosts, 'travelCost');
+  const totalActivityCost = sumDailyField(dailyCosts, 'activityCost');
   const totalFoodCost = costProfile.dailyFoodCost * plannedBudgetDays;
   const totalAccommodationCost =
     costProfile.nightlyAccommodationCost * accommodationNights;
-  const totalEstimatedCost =
-    totalTravelCost +
-    totalActivityCost +
-    totalFoodCost +
-    totalAccommodationCost;
   const spendableBudget = input.totalBudget - input.minEmergencyReserve;
-  const remainingBalance = spendableBudget - totalEstimatedCost;
+  const allocation = allocateBudgetSequentially(dailyCosts, spendableBudget);
   const failureReasons = buildBudgetFailureReasons(
     input.totalBudget,
     input.minEmergencyReserve,
-    totalEstimatedCost,
+    allocation.totalEstimatedCost,
     spendableBudget,
-    remainingBalance,
+    allocation.remainingBalance,
+    plannedBudgetDays,
+    allocation.affordableDays,
+    allocation.firstUnaffordableDay,
   );
 
   return {
@@ -60,11 +78,13 @@ export function calculateBudgetFeasibility(
       totalActivityCost,
       totalFoodCost,
       totalAccommodationCost,
-      totalEstimatedCost,
+      totalEstimatedCost: allocation.totalEstimatedCost,
       emergencyReserve: input.minEmergencyReserve,
       spendableBudget,
-      remainingBalance,
-      dailyBreakdown,
+      remainingBalance: allocation.remainingBalance,
+      affordableDays: allocation.affordableDays,
+      firstUnaffordableDay: allocation.firstUnaffordableDay,
+      dailyBreakdown: allocation.dailyBreakdown,
     },
     failureReasons,
   };
@@ -79,12 +99,12 @@ function getPlannedBudgetDays(
   return Math.max(input.tripDuration, timeResult.minimumDaysRequired);
 }
 
-function buildDailyBreakdown(
+function buildDailyCosts(
   itinerary: ItineraryDay[],
   plannedBudgetDays: number,
   dailyFoodCost: number,
   nightlyAccommodationCost: number,
-): BudgetDay[] {
+): BudgetDayCost[] {
   const itineraryByDay = new Map<number, ItineraryDay>();
 
   for (const day of itinerary) {
@@ -111,8 +131,48 @@ function buildDailyBreakdown(
   });
 }
 
+function allocateBudgetSequentially(
+  dailyCosts: BudgetDayCost[],
+  spendableBudget: number,
+): BudgetAllocationResult {
+  let cumulativeCost = 0;
+  let remainingBudget = spendableBudget;
+  let affordableDays = 0;
+  let firstUnaffordableDay: number | null = null;
+
+  const dailyBreakdown = dailyCosts.map((day) => {
+    const affordable =
+      firstUnaffordableDay === null && remainingBudget >= day.totalDayCost;
+
+    cumulativeCost = roundMoney(cumulativeCost + day.totalDayCost);
+
+    if (affordable) {
+      affordableDays += 1;
+    } else if (firstUnaffordableDay === null) {
+      firstUnaffordableDay = day.dayNumber;
+    }
+
+    remainingBudget = roundMoney(remainingBudget - day.totalDayCost);
+
+    return {
+      ...day,
+      cumulativeCost,
+      remainingBudgetAfterDay: remainingBudget,
+      affordable,
+    };
+  });
+
+  return {
+    dailyBreakdown,
+    totalEstimatedCost: cumulativeCost,
+    remainingBalance: remainingBudget,
+    affordableDays,
+    firstUnaffordableDay,
+  };
+}
+
 function sumDailyField(
-  dailyBreakdown: BudgetDay[],
+  dailyBreakdown: BudgetDayCost[],
   field: 'travelCost' | 'activityCost',
 ): number {
   return dailyBreakdown.reduce((total, day) => total + day[field], 0);
@@ -124,6 +184,9 @@ function buildBudgetFailureReasons(
   totalEstimatedCost: number,
   spendableBudget: number,
   remainingBalance: number,
+  plannedBudgetDays: number,
+  affordableDays: number,
+  firstUnaffordableDay: number | null,
 ): string[] {
   const failureReasons: string[] = [];
 
@@ -135,9 +198,13 @@ function buildBudgetFailureReasons(
 
   if (totalEstimatedCost > spendableBudget) {
     failureReasons.push(
-      `The estimated trip cost is ${totalEstimatedCost} LKR, but only ${spendableBudget} LKR is spendable after keeping the emergency reserve. Short by ${Math.abs(remainingBalance)} LKR.`,
+      `The estimated trip cost is ${totalEstimatedCost} LKR, but only ${spendableBudget} LKR is spendable after keeping the emergency reserve. Short by ${Math.abs(remainingBalance)} LKR. The budget covers ${affordableDays} of ${plannedBudgetDays} planned days; first shortfall occurs on day ${firstUnaffordableDay}.`,
     );
   }
 
   return failureReasons;
+}
+
+function roundMoney(value: number): number {
+  return Number(value.toFixed(3));
 }

@@ -46,13 +46,19 @@ This endpoint receives the same itinerary fields plus:
 
 `daysRequired` and `minimumDaysRequired` currently mean the same thing: the minimum number of days required by the greedy scheduler under the given limits. The duplicate field keeps the old response compatible while making the meaning clearer for presentations.
 
-## Budget Flow
+## Resource Feasibility Flow
 
 1. Run the time scheduler first.
-2. Use itinerary day costs for transport and activity cost.
-3. Estimate food and accommodation from the selected `travelStyle`.
-4. Protect `minEmergencyReserve` by subtracting it from `totalBudget`.
-5. Check whether the estimated trip cost fits inside the remaining spendable budget.
+2. Build a day-cost array using transport, activity, food, and accommodation costs.
+3. Protect `minEmergencyReserve` by subtracting it from `totalBudget`.
+4. Use a greedy sequential resource allocation algorithm:
+   - allocate the spendable budget to day 1 first
+   - continue day by day in itinerary order
+   - track cumulative cost and remaining budget after each day
+   - record the first day where the budget cannot fully cover the required cost
+5. Return `budgetFeasible`, `affordableDays`, `firstUnaffordableDay`, and the daily allocation timeline.
+
+This algorithm fits the problem because trip days are mandatory and chronological. If day 2 cannot be funded, later days cannot make the full trip feasible unless more budget is added or the route/style changes.
 
 Current LKR estimates:
 
@@ -67,13 +73,14 @@ Accommodation is estimated as `plannedBudgetDays - 1` nights. If the itinerary u
 - `Queue<T>` preserves the optimized route order with O(1) enqueue, dequeue, and peek.
 - `Map` avoids repeatedly searching selected attractions during scheduling.
 - Arrays store itinerary days, destinations, route segments, and failure reasons.
-- Budget daily breakdown uses an array so each day's food, accommodation, transport, and activity costs can be shown clearly.
+- Resource allocation uses a daily cost array and a greedy chronological pass to show affordability day by day.
 
 ## Complexity
 
 Let `n` be the number of route segments.
+Let `d` be the number of planned budget days.
 
-- Time: O(n)
-- Space: O(n)
+- Time scheduling: O(n) time and O(n) space.
+- Resource feasibility: O(d) time and O(d) space.
 
 The route order is never changed. The algorithm only partitions that order into feasible days.

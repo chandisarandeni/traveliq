@@ -44,6 +44,12 @@ export interface BudgetBreakdown {
   // Money left after paying estimated trip cost and protecting the reserve.
   remainingBalance: number;
 
+  // Number of planned days fully funded in chronological order.
+  affordableDays: number;
+
+  // First day where spendable budget is insufficient, or null when all days fit.
+  firstUnaffordableDay: number | null;
+
   // Per-day cost breakdown for presentation and debugging.
   dailyBreakdown: BudgetDay[];
 }

@@ -16,4 +16,13 @@ export interface BudgetDay {
 
   // Total estimated cost for this day in LKR.
   totalDayCost: number;
+
+  // Total allocated trip cost from day 1 through this day.
+  cumulativeCost: number;
+
+  // Spendable budget remaining after this day is allocated.
+  remainingBudgetAfterDay: number;
+
+  // True when the spendable budget can fully cover this day in sequence.
+  affordable: boolean;
 }
