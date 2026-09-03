@@ -7,47 +7,25 @@ import { NodeType } from './enums/node-type.enum';
 import { TransportationMode } from './enums/transportation-mode.enum';
 import { NetworkNode } from './interfaces/network-node.interface';
 import { TourismEdge } from './interfaces/tourism-edge.interface';
-import {
-  AllPairsShortestPathResult,
-  ShortestPathResult,
-  TourismEdgeWeightMetric,
-  TourismGraph,
-} from './interfaces/tourism-graph.interface';
 import { GeoapifyService } from './services/geoapify.service';
 import { GraphService } from './services/graph.service';
 import { TransportCostService } from './services/transport-cost.service';
 import { TourismNetwork, TourismNetworkDocument } from './schemas/tourism-network.schema';
 
-interface RouteWeights {
-  costWeight: number;
-  timeWeight: number;
-  distanceWeight: number;
-}
-
-interface RouteMatrices {
-  distanceMatrix: number[][];
-  timeMatrix: number[][];
-  costMatrix: number[][];
-}
-
-interface RouteAnalysis {
-  shortestPath: ShortestPathResult;
-  allPairsShortestPaths: AllPairsShortestPathResult;
-}
-
-interface RouteOptimizationPlan extends RouteMatrices, RouteAnalysis {
+interface RouteOptimizationPlan {
   planId: string;
   startLocation: string;
   endLocation: string;
   locations: string[];
-  weights: RouteWeights;
+  distanceMatrix: number[][];
+  timeMatrix: number[][];
+  costMatrix: number[][];
+  weights: {
+    costWeight: number;
+    timeWeight: number;
+    distanceWeight: number;
+  };
 }
-
-const DEFAULT_ROUTE_WEIGHTS: RouteWeights = {
-  costWeight: 0.5,
-  timeWeight: 0.3,
-  distanceWeight: 0.2,
-};
 
 export interface RouteOptimizationPlansResponse {
   networkId: string;
@@ -94,9 +72,6 @@ export class TourismNetworkService {
     // ============= Module 4 To Module 1 Adapter =============
     // Candidate plans are converted into the exact matrix payload consumed by Route Optimization.
     const candidatePlans = createTourismNetworkDto.candidatePlans ?? [];
-
-    // ============= Sorting Algorithm =============
-    // Candidate plans are processed by ascending rank before matrix generation.
     const sortedCandidatePlans = [...candidatePlans].sort(
       (leftPlan, rightPlan) => (leftPlan.rank ?? Number.MAX_SAFE_INTEGER) - (rightPlan.rank ?? Number.MAX_SAFE_INTEGER),
     );
@@ -140,23 +115,23 @@ export class TourismNetworkService {
     const transportationConfig = this.transportCostService.getTransportationConfig(
       createTourismNetworkDto.preferredTransportation,
     );
-
-    // ============= Graph Data Structure =============
-    // Locations are represented as graph nodes and route connections become weighted graph edges.
     const nodes = this.graphService.prepareUniqueNodes(createTourismNetworkDto);
     const matrixResult = await this.geoapifyService.getRouteMatrix(nodes, transportationConfig.geoapifyMode);
     const graph = this.graphService.buildGraph(nodes, matrixResult, transportationConfig.pricePerKm);
-    const matrices = this.createRouteMatrices(graph);
-    const routeAnalysis = this.createRouteAnalysis(graph, 'travelCost');
 
     return {
       planId: createTourismNetworkDto.candidatePlanId,
       startLocation: createTourismNetworkDto.startingLocation.name,
       endLocation: createTourismNetworkDto.endingLocation.name,
       locations: graph.nodes.map((node) => node.name),
-      ...matrices,
-      weights: DEFAULT_ROUTE_WEIGHTS,
-      ...routeAnalysis,
+      distanceMatrix: this.createNumericMatrix(graph.nodes, graph.connections, 'distanceKm'),
+      timeMatrix: this.createNumericMatrix(graph.nodes, graph.connections, 'travelTimeHours'),
+      costMatrix: this.createNumericMatrix(graph.nodes, graph.connections, 'travelCost'),
+      weights: {
+        costWeight: 0.5,
+        timeWeight: 0.3,
+        distanceWeight: 0.2,
+      },
     };
   }
 
@@ -292,14 +267,10 @@ export class TourismNetworkService {
     // Map keeps directed edge lookup stable while the output remains a plain number matrix.
     const connectionMap = new Map<string, TourismEdge>();
 
-    // ============= HashMap Data Structure =============
-    // Each edge is stored by "fromNodeId->toNodeId" for fast matrix cell lookup.
     for (const connection of connections) {
       connectionMap.set(this.createConnectionKey(connection.fromNodeId, connection.toNodeId), connection);
     }
 
-    // ============= Adjacency Matrix Data Structure =============
-    // The nested Array creates the final row-column matrix for distance, time, or cost.
     return nodes.map((fromNode) =>
       nodes.map((toNode) => {
         if (fromNode.id === toNode.id) {
@@ -319,36 +290,6 @@ export class TourismNetworkService {
 
   private createConnectionKey(fromNodeId: string, toNodeId: string): string {
     return `${fromNodeId}->${toNodeId}`;
-  }
-
-  private createRouteMatrices(graph: TourismGraph): RouteMatrices {
-    // ============= Adjacency Matrix Output =============
-    // Converts weighted graph edges into the three numeric matrices needed by route optimization.
-    return {
-      distanceMatrix: this.createNumericMatrix(graph.nodes, graph.connections, 'distanceKm'),
-      timeMatrix: this.createNumericMatrix(graph.nodes, graph.connections, 'travelTimeHours'),
-      costMatrix: this.createNumericMatrix(graph.nodes, graph.connections, 'travelCost'),
-    };
-  }
-
-  private createRouteAnalysis(graph: TourismGraph, metric: TourismEdgeWeightMetric): RouteAnalysis {
-    // ============= Graph Algorithms =============
-    // Dijkstra gives the best START -> END path. Floyd-Warshall gives all-pairs shortest paths.
-    return {
-      shortestPath: this.graphService.findShortestPathWithDijkstra(
-        graph.adjacencyMatrix,
-        graph.nodeIndexMap,
-        graph.nodes,
-        'START',
-        'END',
-        metric,
-      ),
-      allPairsShortestPaths: this.graphService.findAllPairsShortestPathsWithFloydWarshall(
-        graph.adjacencyMatrix,
-        graph.nodes,
-        metric,
-      ),
-    };
   }
 
   private isObjectRecord(value: unknown): value is Record<string, unknown> {

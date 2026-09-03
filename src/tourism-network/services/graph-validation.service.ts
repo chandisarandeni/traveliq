@@ -7,13 +7,7 @@ export class GraphValidationService {
   validateConnectivity(graph: TourismGraphMatrix, nodes: NetworkNode[]): ConnectivityResult {
     // ============= DFS Connectivity Validation =============
     // Iterative DFS uses an Array as a Stack and a Set for visited nodes.
-
-    // --------------------- Stack Data Structure ------------------
-    // Array.push and Array.pop are used as a LIFO stack for DFS traversal.
     const stack: string[] = [];
-
-    // --------------------- HashSet Data Structure ------------------
-    // Set tracks visited nodes so the DFS does not process the same node twice.
     const visitedNodes = new Set<string>();
     const nodeIds = nodes.map((node) => node.id);
 

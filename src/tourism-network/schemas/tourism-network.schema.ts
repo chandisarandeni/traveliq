@@ -16,36 +16,6 @@ export class RouteWeightsSchema {
 }
 
 @Schema({ _id: false })
-export class ShortestPathSchema {
-  @Prop({ required: true })
-  algorithm!: 'DIJKSTRA';
-
-  @Prop({ required: true })
-  metric!: 'distanceKm' | 'travelTimeHours' | 'travelCost';
-
-  @Prop({ required: true, type: [String] })
-  path!: string[];
-
-  @Prop({ required: true })
-  totalWeight!: number;
-}
-
-@Schema({ _id: false })
-export class AllPairsShortestPathSchema {
-  @Prop({ required: true })
-  algorithm!: 'FLOYD_WARSHALL';
-
-  @Prop({ required: true })
-  metric!: 'distanceKm' | 'travelTimeHours' | 'travelCost';
-
-  @Prop({ required: true, type: [String] })
-  nodeIds!: string[];
-
-  @Prop({ required: true, type: [[Number]] })
-  matrix!: number[][];
-}
-
-@Schema({ _id: false })
 export class RouteOptimizationPlanSchema {
   @Prop({ required: true })
   planId!: string;
@@ -70,12 +40,6 @@ export class RouteOptimizationPlanSchema {
 
   @Prop({ required: true, type: RouteWeightsSchema })
   weights!: RouteWeightsSchema;
-
-  @Prop({ required: true, type: ShortestPathSchema })
-  shortestPath!: ShortestPathSchema;
-
-  @Prop({ required: true, type: AllPairsShortestPathSchema })
-  allPairsShortestPaths!: AllPairsShortestPathSchema;
 }
 
 @Schema({ versionKey: false })
