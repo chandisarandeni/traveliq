@@ -79,6 +79,42 @@ describe('GraphService', () => {
     expect(connection.toNodeId).toBe('ATT002');
     expect(connection.distanceKm).toBe(6.8);
   });
+
+  it('applies Dijkstra algorithm to find the cheapest path from start to end', () => {
+    const nodes = createSimpleRouteNodes();
+    const graph = graphService.buildGraph(nodes, createShortestPathMatrixResult(), 1);
+
+    const result = graphService.findShortestPathWithDijkstra(
+      graph.adjacencyMatrix,
+      graph.nodeIndexMap,
+      graph.nodes,
+      'START',
+      'END',
+      'travelCost',
+    );
+
+    expect(result).toEqual({
+      algorithm: 'DIJKSTRA',
+      metric: 'travelCost',
+      path: ['Start', 'Attraction', 'End'],
+      totalWeight: 2,
+    });
+  });
+
+  it('applies Floyd-Warshall algorithm to calculate all-pairs shortest travel costs', () => {
+    const nodes = createSimpleRouteNodes();
+    const graph = graphService.buildGraph(nodes, createShortestPathMatrixResult(), 1);
+
+    const result = graphService.findAllPairsShortestPathsWithFloydWarshall(
+      graph.adjacencyMatrix,
+      graph.nodes,
+      'travelCost',
+    );
+
+    expect(result.algorithm).toBe('FLOYD_WARSHALL');
+    expect(result.metric).toBe('travelCost');
+    expect(result.matrix[0][2]).toBe(2);
+  });
 });
 
 function createNodes(): NetworkNode[] {
@@ -122,5 +158,53 @@ function createMatrixResult(size: number): GeoapifyRouteMatrixResponse {
         time: sourceIndex === 1 && targetIndex === 2 ? 1200 : 300,
       })),
     ),
+  };
+}
+
+function createSimpleRouteNodes(): NetworkNode[] {
+  return [
+    {
+      id: 'START',
+      name: 'Start',
+      type: NodeType.START,
+      latitude: 7.1,
+      longitude: 80.1,
+    },
+    {
+      id: 'ATT001',
+      name: 'Attraction',
+      type: NodeType.ATTRACTION,
+      latitude: 7.2,
+      longitude: 80.2,
+    },
+    {
+      id: 'END',
+      name: 'End',
+      type: NodeType.END,
+      latitude: 7.3,
+      longitude: 80.3,
+    },
+  ];
+}
+
+function createShortestPathMatrixResult(): GeoapifyRouteMatrixResponse {
+  return {
+    sources_to_targets: [
+      [
+        { distance: 0, time: 0 },
+        { distance: 1000, time: 60 },
+        { distance: 10000, time: 600 },
+      ],
+      [
+        { distance: 1000, time: 60 },
+        { distance: 0, time: 0 },
+        { distance: 1000, time: 60 },
+      ],
+      [
+        { distance: 10000, time: 600 },
+        { distance: 1000, time: 60 },
+        { distance: 0, time: 0 },
+      ],
+    ],
   };
 }

@@ -12,7 +12,12 @@ import { NodeType } from './enums/node-type.enum';
 describe('TourismNetworkService', () => {
   let service: TourismNetworkService;
   let tourismNetworkModel: { create: jest.Mock };
-  let graphService: { prepareUniqueNodes: jest.Mock; buildGraph: jest.Mock };
+  let graphService: {
+    prepareUniqueNodes: jest.Mock;
+    buildGraph: jest.Mock;
+    findShortestPathWithDijkstra: jest.Mock;
+    findAllPairsShortestPathsWithFloydWarshall: jest.Mock;
+  };
 
   beforeEach(async () => {
     tourismNetworkModel = {
@@ -55,6 +60,21 @@ describe('TourismNetworkService', () => {
               travelCost: (fromIndex + toIndex + 1) * 120,
             })),
         ),
+      })),
+      findShortestPathWithDijkstra: jest.fn(() => ({
+        algorithm: 'DIJKSTRA',
+        metric: 'travelCost',
+        path: ['Kandy Railway Station', 'Kandy City Centre'],
+        totalWeight: 120,
+      })),
+      findAllPairsShortestPathsWithFloydWarshall: jest.fn(() => ({
+        algorithm: 'FLOYD_WARSHALL',
+        metric: 'travelCost',
+        nodeIds: ['START', 'END'],
+        matrix: [
+          [0, 120],
+          [120, 0],
+        ],
       })),
     };
 
@@ -210,6 +230,14 @@ describe('TourismNetworkService', () => {
               timeWeight: 0.3,
               distanceWeight: 0.2,
             },
+            shortestPath: expect.objectContaining({
+              algorithm: 'DIJKSTRA',
+              metric: 'travelCost',
+            }),
+            allPairsShortestPaths: expect.objectContaining({
+              algorithm: 'FLOYD_WARSHALL',
+              metric: 'travelCost',
+            }),
           }),
           expect.objectContaining({
             planId: 'PLAN-002',
@@ -239,6 +267,12 @@ describe('TourismNetworkService', () => {
             distanceMatrix: expect.any(Array),
             timeMatrix: expect.any(Array),
             costMatrix: expect.any(Array),
+            shortestPath: expect.objectContaining({
+              algorithm: 'DIJKSTRA',
+            }),
+            allPairsShortestPaths: expect.objectContaining({
+              algorithm: 'FLOYD_WARSHALL',
+            }),
           }),
           expect.objectContaining({
             planId: 'PLAN-002',
