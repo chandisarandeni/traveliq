@@ -27,6 +27,34 @@ import {
   AttractionSelection,
   AttractionSelectionDocument,
 } from './schemas/attraction-selection.schema';
+import defaultAttractionsJson from './data/attractions.json';
+
+function getDefaultAttractions(): SriLankaAttraction[] {
+  return (defaultAttractionsJson as any[]).map((item) => {
+    const categories: InterestCategory[] = [];
+    if (item.nature > 0) categories.push(InterestCategory.NATURE);
+    if (item.wildlife > 0) categories.push(InterestCategory.WILDLIFE);
+    if (item.culture > 0) categories.push(InterestCategory.CULTURE);
+    if (item.adventure > 0) categories.push(InterestCategory.ADVENTURE);
+    if (item.beach > 0) categories.push(InterestCategory.BEACH);
+    if (item.food > 0) categories.push(InterestCategory.FOOD);
+    if (item.shopping > 0) categories.push(InterestCategory.SHOPPING);
+    if (item.history > 0) categories.push(InterestCategory.HISTORY);
+    if (item.religious > 0) categories.push(InterestCategory.RELIGIOUS);
+
+    return {
+      id: item.id,
+      name: item.name,
+      categories,
+      isAvailable: true,
+      latitude: item.lat,
+      longitude: item.lng,
+      region: item.city,
+      district: item.city,
+      rating: item.popularity,
+    };
+  });
+}
 
 @Injectable()
 export class AttractionSelectionService {
@@ -104,9 +132,14 @@ export class AttractionSelectionService {
       tripDuration,
       travelStyle,
       userInterests,
-      availableAttractions,
+      availableAttractions: requestAttractions,
       filterCriteria,
     } = request;
+
+    const availableAttractions =
+      requestAttractions && requestAttractions.length > 0
+        ? requestAttractions
+        : getDefaultAttractions();
 
     // Step 1: Determine recommended destination count
     const recommendedDestinationCount = this.calculateDestinationCount(
@@ -161,23 +194,6 @@ export class AttractionSelectionService {
 
   /**
    * 7. Candidate Plan Generation Pipeline
-   *
-   * Builds up to 5 ranked, diverse trip plans by:
-   *   1. Calling the other developer's algorithms to get destination count,
-   *      interest weights, filtered attractions, and interest scores.
-   *   2. Passing the full scored pool to the greedy plan-generation algorithm.
-   *   3. Ranking the generated plans by composite score.
-   *   4. Echoing preferredTransportation, startingLocation, endingLocation
-   *      from the request into the response for use by the route-optimisation module.
-   *
-   * Greedy algorithm complexity: O(P × D × N × K)
-   *   P = MAX_CANDIDATE_PLANS (5)
-   *   D = destinationCount
-   *   N = number of scored candidate attractions
-   *   K = average number of interest categories per attraction
-   *
-   * @param request Same input shape as selectAttractions() plus optional trip-context fields
-   * @returns CandidatePlansResult with up to 5 ranked trip plans and echoed trip context
    */
   generateCandidatePlans(
     request: AttractionSelectionRequest & {
@@ -190,12 +206,17 @@ export class AttractionSelectionService {
       tripDuration,
       travelStyle,
       userInterests,
-      availableAttractions,
+      availableAttractions: requestAttractions,
       filterCriteria,
       preferredTransportation,
       startingLocation,
       endingLocation,
     } = request;
+
+    const availableAttractions =
+      requestAttractions && requestAttractions.length > 0
+        ? requestAttractions
+        : getDefaultAttractions();
 
     // Step 1: Destination count (other developer's algorithm)
     const destinationCount = this.calculateDestinationCount(
@@ -214,20 +235,18 @@ export class AttractionSelectionService {
     );
 
     // Step 4: Score ALL filtered attractions (other developer's algorithm).
-    // Unlike selectAttractions(), we do NOT cap at recommendedDestinationCount here —
-    // the greedy algorithm needs the full pool to generate meaningfully different plans.
     const rawPool = filteredAttractions.map((attraction) => ({
       attraction,
       interestScore: this.calculateInterestScore(attraction, weightMap),
     }));
 
-    // Step 5: Generate candidate plans (greedy algorithm — my responsibility)
+    // Step 5: Generate candidate plans (greedy algorithm)
     const unrankedPlans = runPlanGeneration(rawPool, destinationCount);
 
-    // Step 6: Rank plans by composite score (my responsibility)
+    // Step 6: Rank plans by composite score
     const candidatePlans = rankPlans(unrankedPlans);
 
-    // Step 7: Build response — echo trip-context fields for route-optimisation module
+    // Step 7: Build response
     const result: CandidatePlansResult = {
       destinationCount,
       candidatePlans,
@@ -326,4 +345,3 @@ export class AttractionSelectionService {
     return `This action removes a #${id} attractionSelection`;
   }
 }
-
