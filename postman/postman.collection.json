@@ -1,0 +1,324 @@
+{
+  "info": {
+    "_postman_id": "8fe7353a-dab7-4e83-b854-f9a19fb0f4305",
+    "name": "TravelIQ APIs",
+    "description": "Postman collection for active TravelIQ API endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3006",
+      "type": "string"
+    },
+    {
+      "key": "networkId",
+      "value": "MATRIX_REPLACE_AFTER_GENERATE",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "traveler@example.com",
+      "type": "string"
+    },
+    {
+      "key": "userPassword",
+      "value": "password123",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "USER_REPLACE_AFTER_CREATE",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user is created\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.id).to.be.a(\"string\");",
+                  "  pm.expect(response.firstName).to.eql(\"Travel\");",
+                  "  pm.expect(response.lastName).to.eql(\"User\");",
+                  "  pm.expect(response.email).to.eql(pm.collectionVariables.get(\"userEmail\"));",
+                  "  pm.expect(response).to.not.have.property(\"passwordHash\");",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.id) {",
+                  "  pm.collectionVariables.set(\"userId\", response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Travel\",\n  \"lastName\": \"User\",\n  \"email\": \"{{userEmail}}\",\n  \"phone\": \"+94771234567\",\n  \"password\": \"{{userPassword}}\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"country\": \"Sri Lanka\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "description": "Creates a user and stores passwordHash in MongoDB. The passwordHash is not returned in the response."
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user can log in\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.message).to.eql(\"Login successful\");",
+                  "  pm.expect(response.user.email).to.eql(pm.collectionVariables.get(\"userEmail\"));",
+                  "  pm.expect(response.user).to.not.have.property(\"passwordHash\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "login"
+              ]
+            },
+            "description": "Logs in with email and password."
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user is updated\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.id).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "  pm.expect(response.firstName).to.eql(\"Updated\");",
+                  "  pm.expect(response.country).to.eql(\"Canada\");",
+                  "  pm.expect(response).to.not.have.property(\"passwordHash\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Updated\",\n  \"phone\": \"+14165550123\",\n  \"country\": \"Canada\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Updates a user by id. You can send any subset of firstName, lastName, email, phone, password, dateOfBirth, and country."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"user is deleted\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.message).to.eql(\"User deleted successfully\");",
+                  "  pm.expect(response.user.id).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "  pm.expect(response.user).to.not.have.property(\"passwordHash\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Deletes a user by id."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tourism Network",
+      "description": "Only the active endpoints under /api/tourism-network.",
+      "item": [
+        {
+          "name": "Generate Matrices And Save Tourism Network",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"matrices are generated and saved\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.networkId).to.be.a(\"string\");",
+                  "  pm.expect(response.plans).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.networkId) {",
+                  "  pm.collectionVariables.set(\"networkId\", response.networkId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destinationCount\": 2,\n  \"candidatePlans\": [\n    {\n      \"planId\": \"PLAN-001\",\n      \"rank\": 1,\n      \"planInterestScore\": 9,\n      \"diversityScore\": 8,\n      \"planScore\": 8.7,\n      \"selectedAttractions\": [\n        {\n          \"attraction\": {\n            \"id\": \"A01\",\n            \"name\": \"Sigiriya Rock Fortress\",\n            \"categories\": [\"HISTORY\", \"CULTURE\", \"NATURE\"],\n            \"latitude\": 7.957,\n            \"longitude\": 80.7603,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 10,\n          \"normalizedScore\": 10\n        },\n        {\n          \"attraction\": {\n            \"id\": \"A02\",\n            \"name\": \"Yala National Park\",\n            \"categories\": [\"WILDLIFE\", \"NATURE\"],\n            \"latitude\": 6.3725,\n            \"longitude\": 81.5218,\n            \"isAvailable\": true\n          },\n          \"interestScore\": 9,\n          \"normalizedScore\": 9\n        }\n      ]\n    }\n  ],\n  \"preferredTransportation\": \"private\",\n  \"startingLocation\": {\n    \"name\": \"Kandy Railway Station\",\n    \"latitude\": 7.2906,\n    \"longitude\": 80.6337\n  },\n  \"endingLocation\": {\n    \"name\": \"Kandy City Centre\",\n    \"latitude\": 7.2921,\n    \"longitude\": 80.6378\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network"
+              ]
+            },
+            "description": "Generates distance, time, and cost matrices, saves the matrix data in MongoDB, and returns the saved networkId."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Generated Tourism Network By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network/{{networkId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network",
+                "{{networkId}}"
+              ]
+            },
+            "description": "Returns the generated matrix payload saved by the POST endpoint."
+          },
+          "response": []
+        },
+        {
+          "name": "Estimate One Connection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": {\n    \"name\": \"Temple of the Tooth\",\n    \"latitude\": 7.2936,\n    \"longitude\": 80.6413\n  },\n  \"to\": {\n    \"name\": \"Peradeniya Botanical Garden\",\n    \"latitude\": 7.2699,\n    \"longitude\": 80.5956\n  },\n  \"preferredTransportation\": \"private\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tourism-network/estimate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tourism-network",
+                "estimate"
+              ]
+            },
+            "description": "Estimates distance, time, and cost for one route connection."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

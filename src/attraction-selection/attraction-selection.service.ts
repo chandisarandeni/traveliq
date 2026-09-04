@@ -1,26 +1,347 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAttractionSelectionDto } from './dto/create-attraction-selection.dto';
-import { UpdateAttractionSelectionDto } from './dto/update-attraction-selection.dto';
+import { Injectable, Optional } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { TravelStyle } from './enums/travel-style.enum';
+import { InterestCategory } from './enums/interest-category.enum';
+import {
+  SriLankaAttraction,
+  InterestWeight,
+  AttractionFilterCriteria,
+  AttractionSelectionRequest,
+  AttractionSelectionResult,
+  CandidateAttraction,
+  ScoredAttraction,
+} from './interfaces/attraction-selection.interface';
+import {
+  CandidatePlansResult,
+  TripLocation,
+} from './interfaces/candidate-plans.interface';
+import { calculateDestinationCount } from './algorithms/destination-count.algorithm';
+import { buildInterestWeightMap } from './algorithms/interest-weighting.algorithm';
+import { calculateInterestScore } from './algorithms/interest-scoring.algorithm';
+import { filterAttractions } from './algorithms/attraction-filter.algorithm';
+import { AttractionMaxHeap } from './data-structures/attraction-max-heap';
+import { generateCandidatePlans as runPlanGeneration } from './algorithms/plan-generator.algorithm';
+import { rankPlans } from './algorithms/plan-ranking.algorithm';
+import {
+  AttractionSelection,
+  AttractionSelectionDocument,
+} from './schemas/attraction-selection.schema';
+import defaultAttractionsJson from './data/attractions.json';
+
+function getDefaultAttractions(): SriLankaAttraction[] {
+  return (defaultAttractionsJson as any[]).map((item) => {
+    const categories: InterestCategory[] = [];
+    if (item.nature > 0) categories.push(InterestCategory.NATURE);
+    if (item.wildlife > 0) categories.push(InterestCategory.WILDLIFE);
+    if (item.culture > 0) categories.push(InterestCategory.CULTURE);
+    if (item.adventure > 0) categories.push(InterestCategory.ADVENTURE);
+    if (item.beach > 0) categories.push(InterestCategory.BEACH);
+    if (item.food > 0) categories.push(InterestCategory.FOOD);
+    if (item.shopping > 0) categories.push(InterestCategory.SHOPPING);
+    if (item.history > 0) categories.push(InterestCategory.HISTORY);
+    if (item.religious > 0) categories.push(InterestCategory.RELIGIOUS);
+
+    return {
+      id: item.id,
+      name: item.name,
+      categories,
+      isAvailable: true,
+      latitude: item.lat,
+      longitude: item.lng,
+      region: item.city,
+      district: item.city,
+      rating: item.popularity,
+    };
+  });
+}
 
 @Injectable()
 export class AttractionSelectionService {
-  create(createAttractionSelectionDto: CreateAttractionSelectionDto) {
+  constructor(
+    @Optional()
+    @InjectModel(AttractionSelection.name)
+    private readonly attractionSelectionModel?: Model<AttractionSelectionDocument>,
+  ) {}
+
+  /**
+   * 1. Destination Count Algorithm
+   * Determines the recommended number of destinations based on trip duration and travel style.
+   */
+  calculateDestinationCount(
+    tripDuration: number,
+    travelStyle: TravelStyle,
+  ): number {
+    return calculateDestinationCount(tripDuration, travelStyle);
+  }
+
+  /**
+   * 2. Interest Weighting Algorithm
+   * Processes user interest weights into an efficient lookup map.
+   */
+  normalizeInterestWeights(
+    userInterests: InterestWeight[],
+  ): Map<InterestCategory, number> {
+    return buildInterestWeightMap(userInterests);
+  }
+
+  /**
+   * 3. Interest Scoring Algorithm
+   * Calculates the match score between an attraction's tags and user interest preferences.
+   */
+  calculateInterestScore(
+    attraction: SriLankaAttraction,
+    userInterests: InterestWeight[] | Map<InterestCategory, number>,
+  ): number {
+    const weightMap =
+      userInterests instanceof Map
+        ? userInterests
+        : buildInterestWeightMap(userInterests);
+    return calculateInterestScore(attraction, weightMap);
+  }
+
+  /**
+   * 4. Attraction Filtering Algorithm
+   * Removes invalid or non-candidate attractions before priority queue insertion.
+   */
+  filterAttractions(
+    attractions: SriLankaAttraction[],
+    criteria?: AttractionFilterCriteria,
+    userInterests?: InterestWeight[] | Map<InterestCategory, number>,
+  ): SriLankaAttraction[] {
+    const weightMap =
+      userInterests instanceof Map
+        ? userInterests
+        : userInterests
+          ? buildInterestWeightMap(userInterests)
+          : undefined;
+
+    return filterAttractions(attractions, criteria, weightMap);
+  }
+
+  /**
+   * 5 & 6. Overall Attraction Selection Pipeline
+   * Orchestrates complete attraction selection:
+   * Trip input -> Calculate Destination Count -> Process Interest Weights -> Filter Attractions
+   * -> Calculate Interest Scores -> Insert into Max Heap -> Extract Top Candidates.
+   */
+  selectAttractions(
+    request: AttractionSelectionRequest,
+  ): AttractionSelectionResult {
+    const {
+      tripDuration,
+      travelStyle,
+      userInterests,
+      availableAttractions: requestAttractions,
+      filterCriteria,
+    } = request;
+
+    const availableAttractions =
+      requestAttractions && requestAttractions.length > 0
+        ? requestAttractions
+        : getDefaultAttractions();
+
+    // Step 1: Determine recommended destination count
+    const recommendedDestinationCount = this.calculateDestinationCount(
+      tripDuration,
+      travelStyle,
+    );
+
+    // Step 2: Build interest weight lookup map
+    const weightMap = this.normalizeInterestWeights(userInterests);
+
+    // Step 3: Filter attractions according to criteria
+    const filteredAttractions = this.filterAttractions(
+      availableAttractions,
+      filterCriteria,
+      weightMap,
+    );
+
+    // Step 4 & 5: Calculate interest scores & insert into Max Heap
+    const maxHeap = new AttractionMaxHeap();
+
+    for (const attraction of filteredAttractions) {
+      const score = this.calculateInterestScore(attraction, weightMap);
+      maxHeap.insert({ attraction, score });
+    }
+
+    // Step 6: Extract highest-priority candidate attractions up to target destination count
+    const candidateAttractions: CandidateAttraction[] = [];
+    const countToExtract = Math.min(
+      recommendedDestinationCount,
+      maxHeap.size(),
+    );
+
+    for (let rank = 1; rank <= countToExtract; rank++) {
+      const maxScored = maxHeap.extractMax();
+      if (!maxScored) {
+        break;
+      }
+      candidateAttractions.push({
+        attraction: maxScored.attraction,
+        score: maxScored.score,
+        rank,
+      });
+    }
+
+    return {
+      recommendedDestinationCount,
+      candidateAttractions,
+      totalCandidatesEvaluated: availableAttractions.length,
+      totalCandidatesFiltered: filteredAttractions.length,
+    };
+  }
+
+  /**
+   * 7. Candidate Plan Generation Pipeline
+   */
+  generateCandidatePlans(
+    request: AttractionSelectionRequest & {
+      preferredTransportation?: string;
+      startingLocation?: TripLocation;
+      endingLocation?: TripLocation;
+    },
+  ): CandidatePlansResult {
+    const {
+      tripDuration,
+      travelStyle,
+      userInterests,
+      availableAttractions: requestAttractions,
+      filterCriteria,
+      preferredTransportation,
+      startingLocation,
+      endingLocation,
+    } = request;
+
+    const availableAttractions =
+      requestAttractions && requestAttractions.length > 0
+        ? requestAttractions
+        : getDefaultAttractions();
+
+    // Step 1: Destination count (other developer's algorithm)
+    const destinationCount = this.calculateDestinationCount(
+      tripDuration,
+      travelStyle,
+    );
+
+    // Step 2: Build interest weight lookup map (other developer's algorithm)
+    const weightMap = this.normalizeInterestWeights(userInterests);
+
+    // Step 3: Filter attractions (other developer's algorithm)
+    const filteredAttractions = this.filterAttractions(
+      availableAttractions,
+      filterCriteria,
+      weightMap,
+    );
+
+    // Step 4: Score ALL filtered attractions (other developer's algorithm).
+    const rawPool = filteredAttractions.map((attraction) => ({
+      attraction,
+      interestScore: this.calculateInterestScore(attraction, weightMap),
+    }));
+
+    // Step 5: Generate candidate plans (greedy algorithm)
+    const unrankedPlans = runPlanGeneration(rawPool, destinationCount);
+
+    // Step 6: Rank plans by composite score
+    const candidatePlans = rankPlans(unrankedPlans);
+
+    // Step 7: Build response
+    const result: CandidatePlansResult = {
+      destinationCount,
+      candidatePlans,
+    };
+
+    if (preferredTransportation !== undefined) {
+      result.preferredTransportation = preferredTransportation;
+    }
+    if (startingLocation !== undefined) {
+      result.startingLocation = startingLocation;
+    }
+    if (endingLocation !== undefined) {
+      result.endingLocation = endingLocation;
+    }
+
+    // Step 8: Persist to database if Mongoose model is available
+    if (this.attractionSelectionModel) {
+      const selectionId = `SEL${Date.now()}`;
+      this.attractionSelectionModel
+        .create({
+          selectionId,
+          tripDuration,
+          travelStyle,
+          destinationCount,
+          userInterests: userInterests?.map((i) => ({
+            interest: i.interest,
+            weight: i.weight,
+          })),
+          candidatePlans,
+          preferredTransportation,
+          startingLocation,
+          endingLocation,
+        })
+        .catch(() => {
+          // Non-blocking: background persistence errors do not affect API response
+        });
+    }
+
+    return result;
+  }
+
+  // Database CRUD methods for AttractionSelection
+  async create(dto: any) {
+    if (this.attractionSelectionModel) {
+      const selectionId = dto.selectionId || `SEL${Date.now()}`;
+      return this.attractionSelectionModel.create({
+        selectionId,
+        ...dto,
+      });
+    }
     return 'This action adds a new attractionSelection';
   }
 
-  findAll() {
+  async findAll() {
+    if (this.attractionSelectionModel) {
+      return this.attractionSelectionModel.find().sort({ createdAt: -1 }).exec();
+    }
     return `This action returns all attractionSelection`;
   }
 
-  findOne(id: number) {
+  async findOne(id: string | number) {
+    if (this.attractionSelectionModel) {
+      const idStr = String(id);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idStr);
+      const query = isObjectId
+        ? { $or: [{ selectionId: idStr }, { _id: idStr }] }
+        : { selectionId: idStr };
+      return this.attractionSelectionModel.findOne(query).exec();
+    }
     return `This action returns a #${id} attractionSelection`;
   }
 
-  update(id: number, updateAttractionSelectionDto: UpdateAttractionSelectionDto) {
+  async update(id: string | number, dto: any) {
+    if (this.attractionSelectionModel) {
+      const idStr = String(id);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idStr);
+      const query = isObjectId
+        ? { $or: [{ selectionId: idStr }, { _id: idStr }] }
+        : { selectionId: idStr };
+      return this.attractionSelectionModel
+        .findOneAndUpdate(query, dto, { new: true })
+        .exec();
+    }
     return `This action updates a #${id} attractionSelection`;
   }
 
-  remove(id: number) {
+  async remove(id: string | number) {
+    if (this.attractionSelectionModel) {
+      const idStr = String(id);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(idStr);
+      const query = isObjectId
+        ? { $or: [{ selectionId: idStr }, { _id: idStr }] }
+        : { selectionId: idStr };
+      return this.attractionSelectionModel.findOneAndDelete(query).exec();
+    }
     return `This action removes a #${id} attractionSelection`;
   }
 }

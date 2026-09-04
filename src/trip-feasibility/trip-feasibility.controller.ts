@@ -1,34 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { TripFeasibilityService } from './trip-feasibility.service';
-import { CreateTripFeasibilityDto } from './dto/create-trip-feasibility.dto';
-import { UpdateTripFeasibilityDto } from './dto/update-trip-feasibility.dto';
+import { CalculateTripFeasibilityDto } from './dto/calculate-trip-feasibility.dto';
+import { CalculateTripItineraryDto } from './dto/calculate-trip-itinerary.dto';
 
 @Controller('trip-feasibility')
 export class TripFeasibilityController {
-  constructor(private readonly tripFeasibilityService: TripFeasibilityService) {}
+  constructor(
+    private readonly tripFeasibilityService: TripFeasibilityService,
+  ) {}
 
-  @Post()
-  create(@Body() createTripFeasibilityDto: CreateTripFeasibilityDto) {
-    return this.tripFeasibilityService.create(createTripFeasibilityDto);
+  // Main Trip Feasibility endpoint for this phase: time and itinerary only.
+  @Post('itinerary')
+  calculateItinerary(@Body() dto: CalculateTripItineraryDto) {
+    return this.tripFeasibilityService.calculateAndSaveItinerary(dto);
   }
 
-  @Get()
-  findAll() {
-    return this.tripFeasibilityService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tripFeasibilityService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTripFeasibilityDto: UpdateTripFeasibilityDto) {
-    return this.tripFeasibilityService.update(+id, updateTripFeasibilityDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tripFeasibilityService.remove(+id);
+  // Full feasibility endpoint: returns both time and budget feasibility.
+  @Post('feasibility')
+  calculateFeasibility(@Body() dto: CalculateTripFeasibilityDto) {
+    return this.tripFeasibilityService.calculateAndSaveFeasibility(dto);
   }
 }

@@ -1,34 +1,136 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
+
 import { TravelPlanRankingService } from './travel-plan-ranking.service';
+import { GreedyRankingService } from './algorithms/greedy-ranking.service';
+import { TravelPlanRankingPersistenceService } from './travel-plan-ranking.persistence.service';
 import { CreateTravelPlanRankingDto } from './dto/create-travel-plan-ranking.dto';
-import { UpdateTravelPlanRankingDto } from './dto/update-travel-plan-ranking.dto';
 
 @Controller('travel-plan-ranking')
 export class TravelPlanRankingController {
-  constructor(private readonly travelPlanRankingService: TravelPlanRankingService) {}
+  constructor(
+    private readonly travelPlanRankingService: TravelPlanRankingService,
+    private readonly greedyRankingService: GreedyRankingService,
+    private readonly persistenceService: TravelPlanRankingPersistenceService,
+  ) {}
 
-  @Post()
-  create(@Body() createTravelPlanRankingDto: CreateTravelPlanRankingDto) {
-    return this.travelPlanRankingService.create(createTravelPlanRankingDto);
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  )
+  @Post('rank')
+  async rankPlans(
+    @Body()
+    createTravelPlanRankingDto: CreateTravelPlanRankingDto,
+  ) {
+    console.log(
+      'REQUEST BODY:',
+      createTravelPlanRankingDto,
+    );
+
+    const {
+      candidatePlans,
+      preferences,
+    } = createTravelPlanRankingDto;
+
+    console.log('CANDIDATE PLANS:', candidatePlans);
+    console.log('PREFERENCES:', preferences);
+
+    const start = performance.now();
+
+    const rankedPlans =
+      this.travelPlanRankingService.rankPlans(
+        candidatePlans,
+        preferences,
+      );
+
+    const bestPlan =
+      this.travelPlanRankingService.findBestPlan(
+        candidatePlans,
+        preferences,
+      );
+
+    const executionTimeMs =
+      performance.now() - start;
+
+    if (bestPlan) {
+      await this.persistenceService.saveResult({
+        algorithmUsed: 'WEIGHTED_SUM',
+        candidateCount: candidatePlans.length,
+        weights: preferences.weights,
+        bestPlan:
+          bestPlan as unknown as Record<string, unknown>,
+        rankedPlans:
+          rankedPlans as unknown as Record<string, unknown>[],
+        executionTimeMs,
+      });
+    }
+
+    return {
+      algorithm: 'WEIGHTED_SUM',
+      executionTimeMs,
+      bestPlan,
+      rankedPlans,
+    };
   }
 
-  @Get()
-  findAll() {
-    return this.travelPlanRankingService.findAll();
-  }
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  )
+  @Post('greedy')
+  async greedyRank(
+    @Body()
+    createTravelPlanRankingDto: CreateTravelPlanRankingDto,
+  ) {
+    const {
+      candidatePlans,
+      preferences,
+    } = createTravelPlanRankingDto;
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.travelPlanRankingService.findOne(+id);
-  }
+    const start = performance.now();
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTravelPlanRankingDto: UpdateTravelPlanRankingDto) {
-    return this.travelPlanRankingService.update(+id, updateTravelPlanRankingDto);
-  }
+    const rankedPlans =
+      this.greedyRankingService.greedyRank(
+        candidatePlans,
+        preferences,
+      );
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.travelPlanRankingService.remove(+id);
+    const executionTimeMs =
+      performance.now() - start;
+
+    const bestPlan =
+      rankedPlans.length > 0
+        ? rankedPlans[0]
+        : null;
+
+    if (bestPlan) {
+      await this.persistenceService.saveResult({
+        algorithmUsed: 'GREEDY_HEURISTIC',
+        candidateCount: candidatePlans.length,
+        weights: preferences.weights,
+        bestPlan:
+          bestPlan as unknown as Record<string, unknown>,
+        rankedPlans:
+          rankedPlans as unknown as Record<string, unknown>[],
+        executionTimeMs,
+      });
+    }
+
+    return {
+      algorithm: 'GREEDY_HEURISTIC',
+      executionTimeMs,
+      bestPlan,
+      rankedPlans,
+    };
   }
 }
